@@ -125,4 +125,4 @@ ngs_file_name<-paste(paste('ngs',argg,sep="_"),'csv',sep=".");
 # ngs_file_name<-paste(paste('ngs',args[1],sep="_"),'csv',sep=".");
 write.csv(ngs_file,paste(loc,ngs_file_name,sep="/"),row.names=FALSE)
 cat("The file",ngs_file_name, "should be completed and saved at" ,loc ,"\n")
-# bye bye
+## bye bye
