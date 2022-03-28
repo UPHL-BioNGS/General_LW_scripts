@@ -15,11 +15,11 @@ Purpose:
 Usage:
 new_runs_basespace_cli.sh
 
-Version: 20220106
+Version: 20220325
 "
 
 scriptdir=$(dirname $0)
-configuration=("kelly" "uphl_ngs")
+configuration=("kelly" "uphl_ngs" "ica" "bioinfo")
 
 date
 echo -e "$USAGE"
