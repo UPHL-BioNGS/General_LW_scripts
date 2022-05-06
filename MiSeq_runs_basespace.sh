@@ -72,6 +72,9 @@ do
           [ $( jobs | wc -l ) -ge $( nproc ) ] && wait
         done
         wait
+        
+        echo "Download Complete! Creating trigger file for ICA upload"
+        touch /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/download_complete.txt
 
         echo "$(date) : Now starting Grandeur" | tee -a $grandeur_log.log
         cd /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name
