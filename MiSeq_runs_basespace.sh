@@ -45,6 +45,7 @@ do
 
         basespace_log=$log_dir/basespace_cli
         grandeur_log=$log_dir/grandeur
+        icav2_log=$log_dir/icav2
 
         cd /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name
         echo "$(date) : Copying SampleSheet.csv to /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads" | tee -a $basespace_log.log
@@ -72,7 +73,21 @@ do
           [ $( jobs | wc -l ) -ge $( nproc ) ] && wait
         done
         wait
-
+        
+        echo "Download complete! Creating trace file confirming download!"
+        touch /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/download_complete.txt
+        
+        icav2 projects enter Testing \
+          2>> $icav2_log.err | tee -a $ica2_log.log
+        icav2 projectdata upload /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw /$run_name/ \
+          2>> $icav2_log.err | tee -a $ica2_log.log
+        
+        wait
+        echo "Uploaded to ICA!"
+        
+        echo "Upload to ICA complete! Renaming trace file to upload_complete!"
+        mv /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/download_complete.txt /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/upload_complete.txt
+        
         echo "$(date) : Now starting Grandeur" | tee -a $grandeur_log.log
         cd /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name
         nextflow run UPHL-BioNGS/Grandeur \
