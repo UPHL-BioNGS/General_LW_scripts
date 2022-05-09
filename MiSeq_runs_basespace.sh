@@ -79,6 +79,9 @@ do
         
         icav2 projects enter Testing \
           2>> $icav2_log.err | tee -a $ica2_log.log
+        
+        wait
+        
         icav2 projectdata upload /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw /$run_name/ \
           2>> $icav2_log.err | tee -a $ica2_log.log
         
