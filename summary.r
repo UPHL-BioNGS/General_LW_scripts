@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 # Author: OLP/2022
-# Usage: summary for PatientSamples
+# Usage: summary for SARS-CoV-2 run, only for PatientSamples, input: one parameter
+# ie. Rscript /. . . ./summary.r UT-A01290-220416
 library("plyr", warn.conflicts = F)
 library("dplyr", warn.conflicts = F)
 library("rbin")#
