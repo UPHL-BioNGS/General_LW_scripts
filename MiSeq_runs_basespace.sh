@@ -15,7 +15,7 @@ Purpose:
 Usage:
 new_runs_basespace_cli.sh
 
-Version: 20220325
+Version: 20220526
 "
 
 scriptdir=$(dirname $0)
@@ -95,6 +95,7 @@ do
           --reads /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw \
           -r main \
           -with-tower \
+          -dsl1 \
           2>> $grandeur_log.err | tee -a $grandeur_log.log
 
         nextflow run UPHL-BioNGS/Grandeur \
@@ -102,6 +103,7 @@ do
           --reads /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw \
           -r main \
           -resume \
+          -dsl1 \
           --shigatyper true \
           2>> $grandeur_log.err | tee -a $grandeur_log.log
       fi
