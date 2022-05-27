@@ -38,13 +38,13 @@ do
 
     cd /Volumes/IDGenomics_NAS/NextStrain/$current_date
     echo "$(date) : Running Dripping_Rock to get the metadata together" 2>> $err_file | tee -a $log_file
-    nextflow /home/Bioinformatics/Dripping_Rock/metadata/nextstrain_metadata.nf -with-tower 2>> $err_file | tee -a $log_file
+    nextflow /home/Bioinformatics/Dripping_Rock/metadata/nextstrain_metadata.nf -with-tower -dsl1 2>> $err_file | tee -a $log_file
     echo "$(date) : The metadata file should be at /Volumes/IDGenomics_NAS/NextStrain/$current_date/Dripping_Rock/UPHL_metadata.csv" 2>> $err_file | tee -a $log_file
 
     if [ "$(date +%u)" -eq "7" ]
     then
       echo "$(date) : It's Sunday, time to get a new tree" 2>> $err_file | tee -a $log_file
-      nextflow /home/Bioinformatics/Dripping_Rock/metadata/nextstrain_metadata.nf -with-tower -resume --msa true
+      nextflow /home/Bioinformatics/Dripping_Rock/metadata/nextstrain_metadata.nf -with-tower -resume --msa true -dsl1
     fi
 
   fi
