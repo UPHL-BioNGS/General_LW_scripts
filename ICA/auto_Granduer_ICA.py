@@ -56,6 +56,8 @@ while go == 1:
     if len(tmp)>0:
         print('Start Analysis on ICA \n %s' % tmp)
         run_name=tmp[0].split()[1]
+        bashCommand = "icav2 projectdata list --parent-folder %s --match-mode FUZZY" % tmp[0].split()[0]
+        tmp= icav_out(bashCommand)
         ica_id=tmp[0].split()[4]
 
         # Create icav2 argument
