@@ -60,7 +60,7 @@ while go == 1:
 
         # Create icav2 argument
         arg = "icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_V2 --input reads:%s " % ica_id
-        arg = arg + "--input project_dirs:fol.fb0091ef9e4d4e515b6408da63045a75,fol.90b6b7865bc7434384e408da6377c84,fol.8802646a4148485884df08da6377c840,fol.17212ac619d44b68296008da58d44868,fol.ae742e54d4a54a8acb9c08da64f9d308,fol.97c3321c555a4b1c672f08da58d44868 "
+        arg = arg + "--input project_dirs:fol.fb0091ef9e4d4e515b6408da63045a75,fol.90b6b7865bc7434384e408da6377c840,fol.8802646a4148485884df08da6377c840,fol.17212ac619d44b68296008da58d44868,fol.ae742e54d4a54a8acb9c08da64f9d308,fol.97c3321c555a4b1c672f08da58d44868 "
         arg = arg + "--user-reference %s_Granduer_Analysis" % run_name
 
         print(arg)
