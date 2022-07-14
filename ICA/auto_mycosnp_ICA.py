@@ -43,6 +43,10 @@ while go == 1:
     runs_completed_analysis=os.listdir("/Volumes/IDGenomics_NAS/ICA/Runs_On_ICA")
 #This maybe unneeded but during testing I think the os package generates this file that needs to be removed from list
     try:
+        runs_completed_analysis.remove('.DS_Store')
+    except:
+        print("Nope")
+    try:
         runs_completed_analysis.remove('@eaDir')
     except:
         print("Nope")
