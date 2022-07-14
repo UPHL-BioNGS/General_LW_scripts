@@ -31,10 +31,8 @@ while go == 1:
     process.communicate()
 
     #This  block collects the information of data and runs on ICA
-    bashCommand = "icav2 projectdata list --file-name UT-M03999-  --parent-folder / --match-mode FUZZY"
+    bashCommand = "icav2 projectdata list --file-name UT-M03999-,UT-M07101-,UT-M70330-,UT-FS10001397-  --parent-folder / --match-mode FUZZY"
     tmp= icav_out(bashCommand)
-    bashCommand = "icav2 projectdata list --file-name UT-M07101-  --parent-folder / --match-mode FUZZY"
-    tmp.extend(icav_out(bashCommand))
 
     #This block is needed becuase we started to stream data to ICA before pipelines were working
     cutoff=datetime.strptime('220709', '%y%m%d')
