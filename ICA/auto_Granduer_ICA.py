@@ -7,9 +7,9 @@ import re
 import time
 import pandas as pd
 import numpy as np
-from datetime import date,datetime
+from datetime import date, datetime, timedelta
 
-# This funciton uses the ica CLI tool to return info from ICA
+# This function uses the ica CLI tool to return info from ICA
 def icav_out(bashCommand):
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -21,10 +21,10 @@ def icav_out(bashCommand):
     tmp=[x.replace('\t', ' ') for x in tmp]
     return tmp
 
-# While loop is infinate will keep script running as long as it dosent error out.
+# While loop is infinite will keep script running as long as it doesn't error out.
 go=1
 while go == 1:
-    print('Looking for anaylses that need to start!')
+    print('Looking for analyses that need to start!')
     #This block set the icav2 tool to correct project in use
     bashCommand="icav2 projects enter Testing"
     process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
@@ -35,7 +35,10 @@ while go == 1:
     tmp= icav_out(bashCommand)
 
     #This block is needed becuase we started to stream data to ICA before pipelines were working
-    cutoff=datetime.strptime('220709', '%y%m%d')
+    delta = 10
+    today = datetime.now()    
+    cutoff = today - timedelta(days=delta)
+    
     for i in range(len(tmp)-1,-1,-1):
         try:
             date=datetime.strptime(tmp[i].split()[1].split('-')[2].split('_')[0], '%y%m%d')
