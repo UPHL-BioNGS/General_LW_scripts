@@ -98,7 +98,8 @@ while go == 1:
             bashCommand = "icav2 projectdata list  --parent-folder  " +  run + "output/fastqs/Samples/Lane_1/"
             tmp= icav_out(bashCommand)
             for j in tmp:
-                ica_names.append(j.split(" ")[0])
+                if not "Undetermined" in j.split(" ")[0]:
+                    ica_names.append(j.split(" ")[0])
 
         ica_ids=[]
         sample_names=[]
@@ -109,10 +110,6 @@ while go == 1:
                 ica_ids.append(j.split(" ")[4]+",")
                 sample_names.append(j.split(" ")[1])
 
-        for i in range(len(ica_names)):
-            if re.search("Undetermined/", ica_names[i]):
-                del(ica_names[i])
-                break
 
         sample_sheet=[]
         sample_sheet.append('sample_id,fastq_1,fastq_2\n')
