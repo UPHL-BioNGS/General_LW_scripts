@@ -23,12 +23,31 @@ daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, 
 ## ICA Automation Scripts
 These scripts are intened to make the running of analyses on ICA for production purposes automated as well as downloading the most common files that need to be reviewed by human eyes. Each is written in python and uses the icav2 command line tool provided by Illumina. These are intened to run on screens on the linux work station but whereever they are ran icav2 must already be installed and configured on that system.
 
+### Usage
+These scripts run on infinite loops that should be ran on a screen in the background.
+```
+python auto_Granduer_ICA.py
+```
+```
+python auto_mycosnp_ICA.py
+```
+
 ### mycosnp
-Currently this pipeline is only ran on C. auris sampels. These samples are usually uploaded directly by the Illumia instrument after BSSH calls the reads into ICA.
+Currently this pipeline is only ran on C. auris samples. These samples are usually uploaded directly by the Illumia instrument after BSSH calls the reads into ICA.
 The automation script runs each time these file make there way to ICA. It produces the samplesheet, including control samples, needed for the analysis and uploads it to ICA. It then starts the anaylsis
 
 ### Grandeur
-We currently upload sequncing runs that use granduer using the General_LW_scripts/MiSeq_runs_basespace.sh. This script looks for those uploads then sees if they have already had anaylsis preformed on ICA. If not they start that anaylsis.
+We currently upload sequencing runs that use granduer using the General_LW_scripts/MiSeq_runs_basespace.sh. This script looks for those uploads then sees if they have already had anaylsis preformed on ICA. If not they start that anaylsis.
+
+### Manually Starting Anaylsis Using icav2 CLI
+#### mycosnp
+#### Grandeur
+
+### Manually Starting Anaylsis Using ICA Website and UI
+#### mycosnp
+Because of how the samples are stored from BSSH, many nested trees, it is inpractical to start runs manually. It would take an hour and errors would be common. UI can be used to determine and resolves errors.
+#### Grandeur
+
 
 ### Known Issues
 1. Sometimes analyses fail on ICA and I need to work out the best way to restart these runs. This most likly intells releasing pipelines on ICA and moving each scrip from running in Testing to Production projects; which should only happen after we have some evaulation of these scripts.
