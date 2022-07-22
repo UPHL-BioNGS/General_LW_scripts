@@ -7,7 +7,8 @@ import re
 import time
 import pandas as pd
 import numpy as np
-from datetime import date, datetime, timedelta
+from datetime import date,datetime,timedelta
+from collections import Counter
 
 # This function uses the ica CLI tool to return info from ICA
 def icav_out(bashCommand):
@@ -34,27 +35,33 @@ while go == 1:
     bashCommand = "icav2 projectdata list --file-name UT-M03999-,UT-M07101-,UT-M70330-,UT-FS10001397-  --parent-folder / --match-mode FUZZY"
     tmp= icav_out(bashCommand)
 
+    #This block removes runs that have already had anaylsis completed
+    stubs=[]
+    for i in tmp:
+        stubs.append(i.split()[0][0:17])
+    counts = Counter(stubs)
+    keeps=[k for k in stubs if counts[k] == 1]
+    stubs_d = {k: v for v, k in enumerate(stubs)}
+    keeps2=[]
+    for i in keeps:
+        keeps2.append(int(stubs_d[i]))
+    tmp = [tmp[i] for i in keeps2]
     #This block is needed becuase we started to stream data to ICA before pipelines were working
     delta = 10
     today = datetime.now()    
     cutoff = today - timedelta(days=delta)
-    
-    for i in range(len(tmp)-1,-1,-1):
-        try:
-            date=datetime.strptime(tmp[i].split()[1].split('-')[2].split('_')[0], '%y%m%d')
-        except:
-            del tmp[i]
-            continue
-        if date < cutoff:
-            del tmp[i]
-    #This block removes runs that have already had anaylsis completed
-    for i in tmp:
-        filter_i=tmp[:]
-        filter_i.remove(i)
-        for j in filter_i:
-            if i.split()[1] == j.split()[1][0:16]:
-                tmp.remove(i)
-                tmp.remove(j)
+
+
+    for i in range(3):
+        for i in range(len(tmp)-1,-1,-1):
+            try:
+                date=datetime.strptime(tmp[i].split()[1].split('-')[2].split('_')[0], '%y%m%d')
+            except:
+                del tmp[i]
+                break
+            if date < cutoff:
+                del tmp[i]
+
     #This block kicks off a new anaylsis run for data that does not had it done yet
     if len(tmp)>0:
         print('Start Analysis on ICA \n %s' % tmp)
@@ -72,7 +79,7 @@ while go == 1:
 
         process = subprocess.Popen(arg.split(" "), stdout=subprocess.PIPE)
         print(process.communicate())
-        print('Run started; wait 1 hr to check for new run')
+        print('Run started; wait 12 hr to check for new run')
     else:
-        print('No new runs waiting 1 hr')
-    time.sleep(3600)
+        print('No new runs waiting 12 hr')
+    time.sleep(31200)
