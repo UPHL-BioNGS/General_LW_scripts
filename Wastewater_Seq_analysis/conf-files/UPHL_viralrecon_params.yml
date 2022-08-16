@@ -1,0 +1,15 @@
+platform: 'illumina'
+protocol: 'amplicon'
+primer_set: 'artic'
+genome: 'MN908947.3'
+kraken2_db: '/Volumes/NGS/Bioinformatics/pooja/kraken2_human/'
+kraken2_variants_host_filter: true
+skip_asciigenome: true
+min_mapped_reads: 500
+save_mpileup: true
+variant_caller: 'ivar'
+consensus_caller: 'bcftools'
+skip_assembly: true
+skip_multiqc: false
+max_memory: '32.GB'
+max_cpus: 16

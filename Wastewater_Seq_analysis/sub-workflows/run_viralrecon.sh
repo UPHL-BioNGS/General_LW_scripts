@@ -1,6 +1,6 @@
  #!/bin/bash
 # if any errors, then exit
-set -euxo pipefail
+set -e
 
 ###########################
 # Author: Pooja Gupta
@@ -10,11 +10,11 @@ Purpose: Bash script to run viralrecon bioinformatic pipeline with wastewater se
 
 Usage: run_viralrecon.sh <wastewater sequencing run_name>
 
-Last updated on June 13,2022
+Last updated on Aug 16, 2022
 "
 ###########################
 
-echo $USAGE
+echo "$USAGE"
 run_name=$1
 
 analysis_dir='/Volumes/IDGenomics_NAS/wastewater_sequencing'
@@ -35,7 +35,7 @@ echo "$(date) : First create input samplesheet for viralrecon pipeline"
 if [ ! -f "$out_dir/${run_name}_samplesheet.csv" ]
     then
         echo "$(date) : $infile does not exist. Creating samplesheet required to run viralrecon"
-        python /home/pgupta/pscripts/fastq_dir_to_samplesheet.py $ww_fastq $out_dir/$infile
+        python ./utilities/fastq_dir_to_samplesheet.py $ww_fastq $out_dir/$infile
         echo "$(date) : $infile Samplesheet generated" 
     else echo "$(date) : $infile already exists, starting viralrecon"
 fi
@@ -51,12 +51,12 @@ echo "$(date) : Running viralrecon"
 nextflow run nf-core/viralrecon --input $out_dir/$infile \
                                 --primer_set_version 4 \
                                 --outdir $out_dir \
-                                --nextclade_dataset /Volumes/IDGenomics_NAS/wastewater_sequencing/nextclade-data/20220504/sars-cov-2_MN908947 \
-				                --nextclade_dataset_tag "2022-04-28T12:00:00Z" \
-                                --multiqc_config /Volumes/IDGenomics_NAS/wastewater_sequencing/conf-files/new_multiqc_config.yaml \
+                                --nextclade_dataset false \
+			        --nextclade_dataset_tag false \
+                                --multiqc_config ./conf-files/new_multiqc_config.yaml \
                                 -profile singularity \
-                                -params-file /Volumes/IDGenomics_NAS/wastewater_sequencing/conf-files/UPHL_viralrecon_params.yml \
-                                -c /Volumes/IDGenomics_NAS/wastewater_sequencing/conf-files/UPHL_viralrecon.config -w $work_dir
+                                -params-file ./conf-files/UPHL_viralrecon_params.yml \
+                                -c ./conf-files/UPHL_viralrecon.config -w $work_dir
  
 echo "$(date) : Copying variant long table result file to $results folder"
 cp $out_dir/variants/ivar/variants_long_table.csv $results/${run_name}_variants_long_table.csv

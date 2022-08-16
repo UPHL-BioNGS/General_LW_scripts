@@ -1,6 +1,6 @@
- #!/bin/bash
+#!/bin/bash
 # if any errors, then exit
-set -euxo pipefail
+set -e
 
 ###########################
 # Author: Pooja Gupta
@@ -11,24 +11,24 @@ Purpose: Bash script to automate wastewater sequencing analysis. Consists of thr
 2) run_viralrecon.sh - Run viralrecon bioinformatic pipeline with wastewater sequencing data.
 3) run_freyja_vrn_noBoot.sh - Run Freyja with BAM files from viralrecon
 
-Usage: run_wwtp_sequencing_analysis.sh <wastewater sequencing run_name>
+Usage: ./run_wwtp_sequencing_analysis.sh <wastewater sequencing run_name>
 
-Last updated on June 16,2022
+Last updated on August 08,2022
 "
 ###########################
 
-echo $USAGE
-
-script_dir='/Volumes/IDGenomics_NAS/wastewater_sequencing/wwtp_pscripts'
+echo "$USAGE"
+script_dir='/home/pgupta/General_LW_scripts/Wastewater_Seq_analysis/sub-workflows'
+#script_dir='/home/Bioinformatics/General_LW_scripts/Wastewater_Seq_analysis/'
 run_name=$1
 
 #Set up wastewater sequencing analysis
-log_file1=/Volumes/IDGenomics_NAS/wastewater_sequencing/$run_name/WWP_seq_initialize_analysis.log
-sh $script_dir/WWP_seq_initialize_analysis.sh $run_name | tee -a $log_file1
- 
+
+$script_dir/WWP_seq_initialize_analysis.sh $run_name
+
 #Run viralrecon
-log_file2=/Volumes/IDGenomics_NAS/wastewater_sequencing/$run_name/viralrecon.log
-sh $script_dir/run_viralrecon.sh $run_name | tee -a $log_file2
+log_file2="/Volumes/IDGenomics_NAS/wastewater_sequencing/$run_name/viralrecon.log"
+$script_dir/run_viralrecon.sh $run_name | tee -a $log_file2
 
 echo "$(date) : Checking if the viralrecon pipeline completed successfully"
 if
@@ -42,4 +42,4 @@ fi
 
 #run Freyja
 log_file3=/Volumes/IDGenomics_NAS/wastewater_sequencing/$run_name/freyja.log
-sh $script_dir/run_freyja_vrn_noBoot.sh $run_name | tee -a $log_file3
+$script_dir/run_freyja_vrn_noBoot.sh $run_name | tee -a $log_file3
