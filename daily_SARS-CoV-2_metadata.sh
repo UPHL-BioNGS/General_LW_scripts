@@ -6,7 +6,7 @@ For creating the daily metadata file
 
 bash daily_metadata_file.sh
 
-Version: 2022-02-28
+Version: 2022-09-07
 "
 
 echo "$USAGE"
@@ -27,7 +27,7 @@ do
     # comparing runs to json files
     ls /Volumes/NGS/Analysis/covidseq/UT* -d | rev | cut -f 1 -d "/" | rev | \
       parallel ls /Volumes/IDGenomics_NAS/COVID/daily_metadata/json/{}.json 2>&1 | \
-      grep "No such" | awk '{print $4}' | cut -d "/" -f 6  | cut -f 1 -d "." | \
+      grep "No such" | awk '{print $4}' | cut -d "/" -f 7  | cut -f 1 -d "." | \
       parallel python /home/Bioinformatics/Dripping_Rock/bin/fasta_to_json.py {}
 
     # comparing automatically created json files with working json files
