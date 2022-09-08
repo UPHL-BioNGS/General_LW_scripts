@@ -83,8 +83,7 @@ for (i in 1:n){
 
 df_new <- cbind(as.character(num_actgx), as.character(num_nx),pass_fail)
 summary<-cbind(summary1,df_new);
-colnames(summary)[7]<-("num_actg");colnames(summary)[8]<-("num_n")
-
+summary<-summary %>% rename(sc2_amplicons = 7, num_acgt = 8, num_n = 9)
 #========================================
 # storing files
 d=paste(runPath,'Rsumcovidseq',sep="/");dir.create(file.path(d,"" ), recursive = TRUE); p1<-Sys.time()
