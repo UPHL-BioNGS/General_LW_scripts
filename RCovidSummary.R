@@ -2,10 +2,11 @@
 # Author: JLinares/2022
 # Usage: 1. analysis summary for PatientSamples: Two files are generated: Summary and RunParameters
 #        2. Arguments: run name
-#        3. Example: Rscript / . . . ./summary_v2.R UT-A01290-220416
+#        3. Example: Rscript RCovidSummary.R UT-A01290-220901
 #        4. Connditions/precautions:
 #           a: Analysis completed and Cecret/Lineage_report.csv completed before running this script
 #           b: The samplesIds, generated using a Randon Number Generator, will be differents everytime this sctript is ran.
+#        5. The two generated files will be stored at the runPath/Rsumcovidseq folder. ie: /Volumes/NGS/Analysis/covidseq/runName/Rsumcovidseq
 
 library("easypackages");libraries("XML","xml2","seqinr","data.table")
 sup <- suppressPackageStartupMessages
