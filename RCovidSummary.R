@@ -18,6 +18,12 @@ date<-ymd(substr(args[1], 11, 16));runPath <-paste('/Volumes/NGS/Analysis/covids
 df1 = read.csv(paste(runPath,"covidseq_output/SampleSheet_Intermediate.csv",sep ="/"))
 df2 = read.csv(paste(runPath,"CecretPangolin/pangolin/lineage_report.csv",sep ="/"))
 df3 = read.table(file = paste(runPath,"covidseq_output/Logs_Intermediates/VirusDetection/kmer/Summary.tsv",sep ="/"), sep = '\t', header = T); 
+
+df4 = read.csv(paste(runPath,"covidseq_output/Logs_Intermediates/FastqGeneration/Reports/Demultiplex_Stats.csv",sep ="/"))
+df4<-select(df4, c("SampleID","X..Reads","Mean.Quality.Score..PF."))
+var <-paste('',args[1],sep='-'); head(var)
+df4<-df4 %>% mutate_at("SampleID", str_replace, var, ""); df4<-df4 %>% rename(Num_reads = 2, Mean_Quality_Score = 3)
+
 #=============================================
 # Info parameters about the run:
 Sequencer <-substr(args[1], 4, 4); dat<-substr(args[1], 11, 16);
@@ -31,6 +37,9 @@ ReadType<-xmlToDataFrame(nodes=getNodeSet(xmlParse(read_xml(fileName)),"//ReadTy
 ReadLength<-xmlToDataFrame(nodes=getNodeSet(xmlParse(read_xml(fileName)),"//Read1NumberOfCycles"))
 df1<-tail(df1,-13);df1<-df1[,c(1,3,12)];colnames(df1) <- c("Sample_Accession","Sample_Type","lanes");Nlanes<-length(unique(df1[3])$lanes)
 df1<-filter(df1, Sample_Type == "PatientSample"); n<-length(df1$Sample_Type)
+
+df1<-merge(df1,df4, by.x = "Sample_Accession", by.y = "SampleID", all.x = T)
+
 #=============================================
 # Run parameters
 RunPar <- data.frame("","");colnames(RunPar)<-c("Parameters","Info");
@@ -80,10 +89,15 @@ for (i in 1:n){
           }
   cat(sample," \t",a,"\t",b,"\t",c,"\n")
   }
-
-df_new <- cbind(as.character(num_actgx), as.character(num_nx),pass_fail)
+  
+  
+df_new <- as.data.frame(cbind(as.character(num_actgx), as.character(num_nx),pass_fail)); 
+df_new<-df_new %>% rename(num_actg = 1, num_n = 2)
+head(df_new)
 summary<-cbind(summary1,df_new);
-summary<-summary %>% rename(sc2_amplicons = 7, num_acgt = 8, num_n = 9)
+head(summary)
+summary<-select(summary,"Sample_Accession","Sample_ID","Sample_Type","lanes","Num_reads","Mean_Quality_Score","sc2_amplicons","lineage","scorpio_call","num_actg","num_n","pass_fail" )
+ 
 #========================================
 # storing files
 d=paste(runPath,'Rsumcovidseq',sep="/");dir.create(file.path(d,"" ), recursive = TRUE); p1<-Sys.time()
