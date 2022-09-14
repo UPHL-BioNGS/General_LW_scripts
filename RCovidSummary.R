@@ -15,7 +15,7 @@ sup(library(tidyverse))
 
 args = commandArgs(trailingOnly=T)
 date<-ymd(substr(args[1], 11, 16));runPath <-paste('/Volumes/NGS/Analysis/covidseq',args[1],sep="/")
-df1 = read.csv(paste(runPath,"covidseq_output/SampleSheet_Intermediate.csv",sep ="/"))
+df1 = read.csv(Sys.glob(paste(runPath,"Sample*.csv",sep = "/"),dirmark = TRUE))
 df2 = read.csv(paste(runPath,"CecretPangolin/pangolin/lineage_report.csv",sep ="/"))
 df3 = read.table(file = paste(runPath,"covidseq_output/Logs_Intermediates/VirusDetection/kmer/Summary.tsv",sep ="/"), sep = '\t', header = T); 
 
