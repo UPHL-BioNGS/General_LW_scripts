@@ -21,6 +21,9 @@ import numpy as np
 from datetime import date
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from importlib.machinery import SourceFileLoader
+
+config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/config.py").load_module()
 
 #Create Arguments useing argparse
 parser = argparse.ArgumentParser(description= "This script will downloads fastq files from sequencer runs; start ICA analysis using additional scripts, download ICA analysis results using additional scripts, and send Slack messages to update progress")
@@ -72,8 +75,8 @@ def ica_download(target_dir,files_list):
 
 # Slack_sdk values needed for sending messages to Slack. Uses an API already set up on the Slack website for the UPHL Workspace to post messages on the notifications channel.
 # Function makes sending Slack messages as easy as using the print funcition.
-client = WebClient(token="xoxb-400801635284-4076174266646-kdzxV247nIqMuKMHc552KN3P")
-channel_id = "C042EKJHD0B"
+client = WebClient(token=config.token)
+channel_id = config.channel_id
 def slack_message(string):
     try:
 
