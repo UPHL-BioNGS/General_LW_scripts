@@ -69,7 +69,7 @@ def icav_out(bashCommand):
 # Function to loop through files needed to be downloaded for each analysis.
 def ica_download(target_dir,files_list):
     for i in files_list:
-        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads" % (target_dir,files_list,args.run_name)
+        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads" % (target_dir,i,args.run_name)
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         process.communicate()
 
