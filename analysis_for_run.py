@@ -69,7 +69,7 @@ def icav_out(bashCommand):
 # Function to loop through files needed to be downloaded for each analysis.
 def ica_download(target_dir,files_list):
     for i in files_list:
-        bashCommand = "./icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads" % (target_dir,files_list,args.run_name)
+        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads" % (target_dir,files_list,args.run_name)
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         process.communicate()
 
@@ -199,11 +199,11 @@ print("%s has comleted analysis on ICA" % args.run_name)
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
 if args.ica_download:
-    bashCommand = "./icav2 projectdata list --file-name %s --match-mode FUZZY" % run_name
+    bashCommand = "icav2 projectdata list --file-name %s --match-mode FUZZY" % run_name
     tmp= icav_out(bashCommand)
     for i in tmp:
         try:
-            bashCommand = "./icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
+            bashCommand = "icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
             tmp= icav_out(bashCommand)
             target_dir= i.split()[0]
         except:
