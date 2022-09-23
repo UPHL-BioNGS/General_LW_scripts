@@ -121,7 +121,7 @@ except:
 
 #If samples are directly avaiable in ICA there is no need to wait for download to start anaylsis by calling another python script
 if args.analysis == 'mycosnp':
-    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=true)
+    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # Once the run is completed it will be downloaded
 # First the samplesheet must be downloaded
