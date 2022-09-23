@@ -164,7 +164,7 @@ if args.download_reads:
 
 # Start ICA Anaylsis if not mycosnp; Call other python script
 if args.analysis == 'Grandeur':
-    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=true)
+    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # While loop to look in ICA to See if run is finished
 slack_message('Started %s Anaylysis on ICA and Monitoring' % args.run_name)
