@@ -107,6 +107,15 @@ while t==0:
                 break
         except:
             continue
+        try:
+            if tmp.at[args.run_name,'Status']=='Failed':
+                user=i
+                idd=tmp.at[args.run_name,'Id']
+                slack_message('%s is "Failed"; Script is aborting, check BSSH for more information' % args.run_name)
+                print('%s is "Failed"; Script is aborting, check BSSH for more information' % args.run_name)
+                sys.exit()
+        except:
+            continue
     # Wait 20 min then look again.
     if t==1:
         break
