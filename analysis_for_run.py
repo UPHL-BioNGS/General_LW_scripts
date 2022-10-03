@@ -187,7 +187,7 @@ while t == 0:
     tmp=icav_out(bashCommand)
     tmp2=[]
     for i in range(len(tmp)):
-        if run_name in tmp[i]:
+        if args.run_name in tmp[i]:
             tmp2.append(tmp[i])
     try:
         if tmp2[-1].split()[-1] == 'SUCCEEDED':
