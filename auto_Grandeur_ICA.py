@@ -50,7 +50,7 @@ bashCommand = "icav2 projectdata upload /Volumes/IDGenomics_NAS/WGS_Serotyping/%
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
 
-bashCommand = "icav2 projectdata list --parent-folder %s --match-mode FUZZY" % tmp[0].split()[0]
+bashCommand = "icav2 projectdata list --parent-folder %s --match-mode FUZZY" % run_name
 tmp= icav_out(bashCommand)
 ica_id=tmp[0].split()[4]
 
