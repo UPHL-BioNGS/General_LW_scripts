@@ -108,11 +108,11 @@ while t==0:
         except:
             continue
         try:
-            if tmp.at[args.run_name,'Status']=='Failed':
+            if tmp.at[args.run_name,'Status']=='Failed' or tmp.at[args.run_name,'Status']=='Stopped':
                 user=i
                 idd=tmp.at[args.run_name,'Id']
-                slack_message('%s is "Failed"; Script is aborting, check BSSH for more information' % args.run_name)
-                print('%s is "Failed"; Script is aborting, check BSSH for more information' % args.run_name)
+                slack_message('%s is "Failed" or "Stopped" ; Script is aborting, check BSSH for more information' % args.run_name)
+                print('%s is "Failed" or "Stopped" ; Script is aborting, check BSSH for more information' % args.run_name)
                 sys.exit()
         except:
             continue
