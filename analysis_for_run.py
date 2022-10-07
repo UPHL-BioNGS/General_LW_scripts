@@ -208,7 +208,7 @@ print("%s has comleted analysis on ICA" % args.run_name)
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
 if args.ica_download:
-    bashCommand = "icav2 projectdata list --file-name %s --match-mode FUZZY" % run_name
+    bashCommand = "icav2 projectdata list --file-name %s --match-mode FUZZY" % args.run_name
     tmp= icav_out(bashCommand)
     for i in tmp:
         try:
