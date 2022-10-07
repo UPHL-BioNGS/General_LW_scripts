@@ -3,6 +3,7 @@
 """
 Author: John Arnn
 Released: 2022-09-20
+Version: 1.0.0
 Description:
 This script will download the reads from BSSH once run completes on sequencer, start analysis on ICA,
 and download results from ICA while sending updates to Slack at UPHL Workspace notifications channel.
@@ -18,7 +19,7 @@ import re
 import time
 import pandas as pd
 import numpy as np
-from datetime import date
+from datetime import date, datetime
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from importlib.machinery import SourceFileLoader
@@ -38,7 +39,7 @@ parser.add_argument('--ica_reference', help='This is an opitonal flag to modify 
 args = parser.parse_args()
 
 # These are the config files that are on the production account
-configurations=["kelly","uphl_ngs","ica","bioinfo"]
+configurations=["bioinfo"]
 
 # Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
 def bs_out(bashCommand):
@@ -88,8 +89,8 @@ def slack_message(string):
     except:
         print("Slack Error")
 
-slack_message('Monitoring %s on BSSH' % args.run_name)
-print('Monitoring %s on BSSH' % args.run_name)
+slack_message('Monitoring %s on BSSH %s' % args.run_name)
+print('Monitoring %s on BSSH %s' % (args.run_name,datetime.now()))
 # This While loops Uses the BaseSpace CLI tool to monitor the progress of the run
 t=0
 while t==0:
@@ -101,8 +102,8 @@ while t==0:
             if tmp.at[args.run_name,'Status']=='Complete':
                 user=i
                 idd=tmp.at[args.run_name,'Id']
-                slack_message('%s is "Complete" on BSSH' % args.run_name)
-                print('%s is "Complete" on BSSH' % args.run_name)
+                slack_message('%s is "Complete" on BSSH ' % args.run_name)
+                print('%s is "Complete" on BSSH' % (args.run_name,datetime.now()))
                 t=1
                 break
         except:
@@ -112,7 +113,7 @@ while t==0:
                 user=i
                 idd=tmp.at[args.run_name,'Id']
                 slack_message('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % args.run_name)
-                print('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % args.run_name)
+                print('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % (args.run_name,datetime.now()))
                 sys.exit()
         except:
             continue
@@ -125,12 +126,12 @@ while t==0:
 try:
     os.makedirs("/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads"% args.run_name)
 except:
-    print("Directory Already Exits, Make sure Reads are not already downloaded and delete Directory")
+    print("Directory Already Exits, Make sure Reads are not already downloaded and delete Directory" % datetime.now())
     sys.exit()
 
 #If samples are directly avaiable in ICA there is no need to wait for download to start anaylsis by calling another python script
 if args.analysis == 'mycosnp':
-    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # Once the run is completed it will be downloaded
 # First the samplesheet must be downloaded
@@ -165,7 +166,7 @@ for i in idds:
     """ % (user,i,args.run_name)
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-print("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
+print("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % (args.run_name,datetime.now()))
 slack_message("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
 
 if args.download_reads:
@@ -173,11 +174,11 @@ if args.download_reads:
 
 # Start ICA Anaylsis if not mycosnp; Call other python script
 if args.analysis == 'Grandeur':
-    subprocess.call("python auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # While loop to look in ICA to See if run is finished
 slack_message('Started %s Anaylysis on ICA and Monitoring' % args.run_name)
-print('Started %s Anaylysis on ICA and Monitoring' % args.run_name)
+print('Started %s Anaylysis on ICA and Monitoring' % (args.run_name,datetime.now()))
 bashCommand = "icav2 projects enter Testing"
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
@@ -192,11 +193,11 @@ while t == 0:
     try:
         if tmp2[-1].split()[-1] == 'SUCCEEDED':
             slack_message('%s is "SUCCEEDED" on ICA' % args.run_name)
-            print('%s is "SUCCEEDED" on ICA' % args.run_name)
+            print('%s is "SUCCEEDED" on ICA' % (args.run_name,datetime.now()))
             t=1
         if tmp2[-1].split()[-1] == 'FAILED':
             slack_message('%s is "FAILED" on ICA' % args.run_name)
-            print('%s is "FAILED" on ICA' % args.run_name)
+            print('%s is "FAILED" on ICA' % (args.run_name,datetime.now()))
             t=1
             break
     except:
@@ -204,7 +205,7 @@ while t == 0:
     time.sleep(1200)
 
 slack_message("%s has comleted analysis on ICA" % args.run_name)
-print("%s has comleted analysis on ICA" % args.run_name)
+print("%s has comleted analysis on ICA" % (args.run_name,datetime.now()))
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
 if args.ica_download:
@@ -232,5 +233,5 @@ if args.ica_download:
     if args.mycosnp:
         ica_download(target_dir,mycosnp_files)
 
-print("analysis_for_run.py completed Successfully")
+print("analysis_for_run.py completed Successfully" % datetime.now())
 slack_message("analysis_for_run.py completed Successfully")
