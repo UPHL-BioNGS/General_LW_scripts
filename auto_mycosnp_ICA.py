@@ -3,6 +3,7 @@
 """
 Author: John Arnn
 Released: 2022-09-20
+Version: 1.0.0
 Description:
 This script will create samplesheet; upload samplesheet to ICA; collect needed ICA ids to start a pipeline analysis;
 build the icav2 command to start, and then start the analysis. If analysis fails to start use the icav2 arg that is created,
