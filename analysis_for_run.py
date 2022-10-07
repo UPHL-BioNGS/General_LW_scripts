@@ -69,7 +69,7 @@ def icav_out(bashCommand):
 # Function to loop through files needed to be downloaded for each analysis.
 def ica_download(target_dir,files_list):
     for i in files_list:
-        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads" % (target_dir,i,args.run_name)
+        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/" % (target_dir,i,args.run_name)
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         process.communicate()
 
@@ -211,14 +211,22 @@ if args.ica_download:
     bashCommand = "icav2 projectdata list --file-name %s --match-mode FUZZY" % args.run_name
     tmp= icav_out(bashCommand)
     for i in tmp:
-        try:
-            bashCommand = "icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
+       try:
+            bashCommand = "./icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
             tmp= icav_out(bashCommand)
             target_dir= i.split()[0]
+            break
         except:
-            continue
+            pass
+        try:
+            bashCommand = "./icav2 projectdata list --parent-folder %sgrandeur/" % i.split()[0]
+            tmp= icav_out(bashCommand)
+            target_dir= i.split()[0]
+            break
+        except:
+            pass
     mycosnp_files=['Results/stats/*','Results/multiqc_report.html','Results/combined/*']
-    Grandeur_files=['grandeur/summary/grandeur_summary.txt','grandeur/grandeur_results.tsv','grandeur/ncbi-AMRFinderplus/*','grandeur/kraken2/*','grandeur/blobtools/*','grandeur/contigs/*','grandeur/multiqc/multiqc_report.html']
+    Grandeur_files=['grandeur/*']
     if args.Grandeur:
         ica_download(target_dir,Grandeur_files)
     if args.mycosnp:
