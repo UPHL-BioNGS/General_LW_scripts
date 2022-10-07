@@ -36,7 +36,7 @@ EXAMPLE: python analysis_for_run.py UT-VH0770-220915 -a mycosnp -i
 
 ## auto_mycosnp_ICA.py
 
-This script will create a samplesheet; upload the samplesheet to ICA; collect needed ICA ids to start a pipeline analysis;
+This script will create a samplesheet, upload the samplesheet to ICA, collect needed ICA ids to start a pipeline analysis,
 build the icav2 command to start, and then start the analysis. If analysis fails to start; use the icav2 arg that is created,
 then use icav2 manually to troubleshoot issue. Most likely: icav2 config incorrectly; IDS incorrect; IDS not linked to project; syntax issue with command. An optional 2nd arguement can be included that will add to the ICA User Reference for the analysis. It is recommended if an ICA analysis has already been tried. Having the same User Reference can give ICA problems.
 
