@@ -89,7 +89,7 @@ def slack_message(string):
     except:
         print("Slack Error")
 
-slack_message('Monitoring %s on BSSH %s' % args.run_name)
+slack_message('Monitoring %s on BSSH for %s analysis' % (args.run_name,args.analysis))
 print('Monitoring %s on BSSH %s' % (args.run_name,datetime.now()))
 # This While loops Uses the BaseSpace CLI tool to monitor the progress of the run
 t=0
@@ -102,7 +102,7 @@ while t==0:
             if tmp.at[args.run_name,'Status']=='Complete':
                 user=i
                 idd=tmp.at[args.run_name,'Id']
-                slack_message('%s is "Complete" on BSSH ' % args.run_name)
+                slack_message('%s is "Complete" on BSSH for %s analysis' % (args.run_name,args.analysis))
                 print('%s is "Complete" on BSSH' % (args.run_name,datetime.now()))
                 t=1
                 break
@@ -177,7 +177,7 @@ if args.analysis == 'Grandeur':
     subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # While loop to look in ICA to See if run is finished
-slack_message('Started %s Anaylysis on ICA and Monitoring' % args.run_name)
+slack_message('Started %s Anaylysis on ICA and Monitoring for %s analysis' % (args.run_name,args.analysis))
 print('Started %s Anaylysis on ICA and Monitoring' % (args.run_name,datetime.now()))
 bashCommand = "icav2 projects enter Testing"
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
@@ -192,11 +192,11 @@ while t == 0:
             tmp2.append(tmp[i])
     try:
         if tmp2[-1].split()[-1] == 'SUCCEEDED':
-            slack_message('%s is "SUCCEEDED" on ICA' % args.run_name)
+            slack_message('%s is "SUCCEEDED" on ICA for %s analysis' % (args.run_name,args.analysis))
             print('%s is "SUCCEEDED" on ICA' % (args.run_name,datetime.now()))
             t=1
         if tmp2[-1].split()[-1] == 'FAILED':
-            slack_message('%s is "FAILED" on ICA' % args.run_name)
+            slack_message('%s is "FAILED" on ICA for %s analysis' % (args.run_name,args.analysis))
             print('%s is "FAILED" on ICA' % (args.run_name,datetime.now()))
             t=1
             break
@@ -204,7 +204,7 @@ while t == 0:
         continue
     time.sleep(1200)
 
-slack_message("%s has comleted analysis on ICA" % args.run_name)
+slack_message("%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
 print("%s has comleted analysis on ICA" % (args.run_name,datetime.now()))
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
@@ -234,4 +234,4 @@ if args.ica_download:
         ica_download(target_dir,mycosnp_files)
 
 print("analysis_for_run.py completed Successfully" % datetime.now())
-slack_message("analysis_for_run.py completed Successfully")
+slack_message("analysis_for_run.py completed Successfully %s for %s analysis' % (args.run_name,args.analysis))
