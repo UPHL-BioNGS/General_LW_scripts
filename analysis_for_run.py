@@ -204,7 +204,7 @@ while t == 0:
         continue
     time.sleep(1200)
 
-slack_message("%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
+slack_message('%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
 print("%s has comleted analysis on ICA" % (args.run_name,datetime.now()))
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
@@ -234,4 +234,4 @@ if args.ica_download:
         ica_download(target_dir,mycosnp_files)
 
 print("analysis_for_run.py completed Successfully" % datetime.now())
-slack_message("analysis_for_run.py completed Successfully %s for %s analysis' % (args.run_name,args.analysis))
+slack_message('analysis_for_run.py completed Successfully %s for %s analysis' % (args.run_name,args.analysis))
