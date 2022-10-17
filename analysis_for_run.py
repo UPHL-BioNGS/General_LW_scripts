@@ -103,7 +103,7 @@ while t==0:
                 user=i
                 idd=tmp.at[args.run_name,'Id']
                 slack_message('%s is "Complete" on BSSH for %s analysis' % (args.run_name,args.analysis))
-                print('%s is "Complete" on BSSH' % (args.run_name,datetime.now()))
+                print('%s is "Complete" on BSSH at %s' % (args.run_name,datetime.now()))
                 t=1
                 break
         except:
@@ -113,7 +113,7 @@ while t==0:
                 user=i
                 idd=tmp.at[args.run_name,'Id']
                 slack_message('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % args.run_name)
-                print('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % (args.run_name,datetime.now()))
+                print('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information %s' % (args.run_name,datetime.now()))
                 sys.exit()
         except:
             continue
@@ -166,7 +166,7 @@ for i in idds:
     """ % (user,i,args.run_name)
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-print("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % (args.run_name,datetime.now()))
+print("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw at %s" % (args.run_name,datetime.now()))
 slack_message("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
 
 if args.download_reads:
@@ -178,7 +178,7 @@ if args.analysis == 'Grandeur':
 
 # While loop to look in ICA to See if run is finished
 slack_message('Started %s Anaylysis on ICA and Monitoring for %s analysis' % (args.run_name,args.analysis))
-print('Started %s Anaylysis on ICA and Monitoring' % (args.run_name,datetime.now()))
+print('Started %s Anaylysis on ICA and Monitoring at %s' % (args.run_name,datetime.now()))
 bashCommand = "icav2 projects enter Testing"
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
@@ -193,11 +193,11 @@ while t == 0:
     try:
         if tmp2[-1].split()[-1] == 'SUCCEEDED':
             slack_message('%s is "SUCCEEDED" on ICA for %s analysis' % (args.run_name,args.analysis))
-            print('%s is "SUCCEEDED" on ICA' % (args.run_name,datetime.now()))
+            print('%s is "SUCCEEDED" on ICA %s' % (args.run_name,datetime.now()))
             t=1
         if tmp2[-1].split()[-1] == 'FAILED':
             slack_message('%s is "FAILED" on ICA for %s analysis' % (args.run_name,args.analysis))
-            print('%s is "FAILED" on ICA' % (args.run_name,datetime.now()))
+            print('%s is "FAILED" on ICA %s' % (args.run_name,datetime.now()))
             t=1
             break
     except:
@@ -205,7 +205,7 @@ while t == 0:
     time.sleep(1200)
 
 slack_message('%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
-print("%s has comleted analysis on ICA" % (args.run_name,datetime.now()))
+print("%s has comleted analysis on ICA %s" % (args.run_name,datetime.now()))
 
 # Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
 if args.ica_download:
@@ -233,5 +233,5 @@ if args.ica_download:
     if args.mycosnp:
         ica_download(target_dir,mycosnp_files)
 
-print("analysis_for_run.py completed Successfully" % datetime.now())
+print("analysis_for_run.py completed Successfully at %s" % datetime.now())
 slack_message('analysis_for_run.py completed Successfully %s for %s analysis' % (args.run_name,args.analysis))
