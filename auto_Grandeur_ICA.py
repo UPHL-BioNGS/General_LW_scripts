@@ -20,6 +20,7 @@ import re
 import pandas as pd
 import numpy as np
 import datetime
+import time
 
 # This function uses the ica CLI tool to return info from ICA
 def icav_out(bashCommand):
@@ -50,6 +51,8 @@ else:
 bashCommand = "icav2 projectdata upload /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw /%s/" % (run_name,run_name)
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
+
+time.sleep(180)
 
 bashCommand = "icav2 projectdata list --parent-folder /%s/ --match-mode FUZZY" % run_name
 tmp= icav_out(bashCommand)
