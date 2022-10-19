@@ -228,9 +228,9 @@ if args.ica_download:
             pass
     mycosnp_files=['Results/stats/*','Results/multiqc_report.html','Results/combined/*']
     Grandeur_files=['grandeur/*']
-    if args.Grandeur:
+    if args.analysis == Grandeur:
         ica_download(target_dir,Grandeur_files)
-    if args.mycosnp:
+    if args.analysis == mycosnp:
         ica_download(target_dir,mycosnp_files)
 
 print("analysis_for_run.py completed Successfully at %s" % datetime.now())
