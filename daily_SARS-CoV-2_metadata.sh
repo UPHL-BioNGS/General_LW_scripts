@@ -6,7 +6,7 @@ For creating the daily metadata file
 
 bash daily_metadata_file.sh
 
-Version: 2022-09-07
+Version: 2022-11-16
 "
 
 echo "$USAGE"
@@ -25,7 +25,7 @@ do
     echo "$(date) : metadata will be in /Volumes/IDGenomics_NAS/COVID/daily_metadata/$current_date/dripping_rock" 2>> $err_file | tee -a $log_file
 
     # comparing runs to json files
-    ls /Volumes/NGS/Analysis/covidseq/UT* -d | rev | cut -f 1 -d "/" | rev | \
+    ls /Volumes/NGS/Analysis/covidseq/UT*/covidseq_complete.txt | rev | cut -f 2 -d "/" | rev | \
       parallel ls /Volumes/IDGenomics_NAS/COVID/daily_metadata/json/{}.json 2>&1 | \
       grep "No such" | awk '{print $4}' | cut -d "/" -f 7  | cut -f 1 -d "." | \
       parallel python /home/Bioinformatics/Dripping_Rock/bin/fasta_to_json.py {}
@@ -55,12 +55,12 @@ do
   fi
 
   # print a slight QC output that compares runs to the jsons
-  covidseq_runs=($(ls /Volumes/NGS/Analysis/covidseq/UT-* -d | grep -v " " | rev | cut -f 1 -d "/" | rev))
+  covidseq_runs=($(ls /Volumes/NGS/Analysis/covidseq/UT*/covidseq_complete.txt | rev | cut -f 2 -d "/" | rev))
   for run in ${covidseq_runs[@]}
   do
     if [ ! -f "/Volumes/IDGenomics_NAS/COVID/daily_metadata/working_json/$run.json" ]
     then
-      echo "$(date) : $run cannot be included in the metadata file"
+      echo "$(date) : $run was not included in the metadata file"
     fi
   done
 
