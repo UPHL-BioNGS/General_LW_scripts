@@ -99,7 +99,21 @@ uniq_lineage['Parent_lineage'] = np.where(uniq_lineage.lineages.str.startswith('
                                 np.where(uniq_lineage.lineages.str.startswith('BD'), 'Omicron (BA.1)',
                                 np.where(uniq_lineage.lineages.str.startswith('BE'), 'Omicron (BA.5)',
                                 np.where(uniq_lineage.lineages.str.startswith('BF'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('BQ'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('BK'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('BU'), 'Omicron (BA.5)',    
+                                np.where(uniq_lineage.lineages.str.startswith('BV'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('BW'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('CC'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('CD'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('CE'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('CF'), 'Omicron (BA.5)',
+                                np.where(uniq_lineage.lineages.str.startswith('CG'), 'Omicron (BA.5)',
                                 np.where(uniq_lineage.lineages.str.startswith('BG'), 'Omicron (BA.2)',
+                                np.where(uniq_lineage.lineages.str.startswith('BH'), 'Omicron (BA.2)',
+                                np.where(uniq_lineage.lineages.str.startswith('BM'), 'Omicron (BA.2)',
+                                np.where(uniq_lineage.lineages.str.startswith('BN'), 'Omicron (BA.2)',
+                                np.where(uniq_lineage.lineages.str.startswith('BL'), 'Omicron (BA.2)',
                                 np.where(uniq_lineage.lineages.str.startswith('Q'), 'Alpha',
                                 np.where(uniq_lineage.lineages.str.startswith('B.1.1.7'), 'Alpha',
                                 np.where(uniq_lineage.lineages.str.startswith('B.1.351'), 'Beta',         
@@ -149,7 +163,7 @@ uniq_lineage['Parent_lineage'] = np.where(uniq_lineage.lineages.str.startswith('
                                 np.where(uniq_lineage.lineages.str.startswith('R'), 'B.1.1.316',         
                                 np.where(uniq_lineage.lineages.str.startswith('B.1'), 'B.1',
                                 np.where(uniq_lineage.lineages.str.startswith('X'), 'Recombinant',
-                                np.where(uniq_lineage.lineages.str.startswith('miscRecombOrContam'), 'miscRecombOrContam', 'NA')))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                np.where(uniq_lineage.lineages.str.startswith('miscRecombOrContam'), 'miscRecombOrContam', 'NA')))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 
 uniq_lineage.to_csv("freyja_uniq_lineage_w_lin_grps.csv", sep=',', index=0)

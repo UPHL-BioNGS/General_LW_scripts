@@ -10,7 +10,7 @@ Purpose: Bash script to run viralrecon bioinformatic pipeline with wastewater se
 
 Usage: run_viralrecon.sh <wastewater sequencing run_name>
 
-Last updated on Aug 16, 2022
+Last updated on Jan 12, 2023
 "
 ###########################
 
@@ -21,7 +21,7 @@ analysis_dir='/Volumes/IDGenomics_NAS/wastewater_sequencing'
 mkdir -p /Volumes/IDGenomics_NAS/wastewater_sequencing/$run_name/analysis/viralrecon/work
 
 #Creating required folders for analysis
-ww_fastq=$analysis_dir/$run_name/raw_data
+ww_fastq=$analysis_dir/$run_name/raw_data/fastq
 out_dir=$analysis_dir/$run_name/analysis/viralrecon
 work_dir=$analysis_dir/$run_name/analysis/viralrecon/work
 results=$analysis_dir/$run_name/results
