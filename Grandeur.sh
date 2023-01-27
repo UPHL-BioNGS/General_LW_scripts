@@ -11,7 +11,7 @@ Given a run name,
 5) run grandeur
 
 Usage:
-LW_Grandeur.sh run_name
+Grandeur.sh run_name
 
 Version: 20230127
 "
@@ -117,16 +117,33 @@ do
 done
 wait
 
-echo "Download complete! Creating trace file confirming download!"
+echo "$(date): Download complete! Creating trace file confirming download."
 touch $out/download_complete.txt
 
-echo "$(date) : Now starting Grandeur" | tee $logdir/grandeur.log
-nextflow run UPHL-BioNGS/Grandeur \
-    -profile uphl \
-    -r 3.0.20230120 \
-    --reads $out/reads \
-    -with-tower \
-    2>> $logdir/grandeur.err | tee -a $logdir/grandeur.log
+echo "$(date): Moving to ICA"
+icav2 projects enter Testing
+
+icav2 projectdata upload $out/reads
+wait
+
+# getting the ica id
+ica_id=$(icav2 projectdata list --parent-folder /$run/ --match-mode FUZZY | awk '{ print $4 }' )
+
+# running on ICA
+icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_V3 \
+    --input reads:$ica_id \
+    --input project_dirs:fol.fb0091ef9e4d4e515b6408da63045a75,fol.90b6b7865bc7434384e408da6377c840,fol.8802646a4148485884df08da6377c840,fol.17212ac619d44b68296008da58d44868,fol.756293fdaa3942cc3b9f08da58d44869,fol.97c3321c555a4b1c672f08da58d44868 \
+    --user-reference ${run}_Granduer_Analysis
+
+# downloading results
+
+# echo "$(date) : Now starting Grandeur" | tee $logdir/grandeur.log
+# nextflow run UPHL-BioNGS/Grandeur \
+#     -profile uphl \
+#     -r 3.0.20230120 \
+#     --reads $out/reads \
+#     -with-tower \
+#     2>> $logdir/grandeur.err | tee -a $logdir/grandeur.log
 
 echo "$(date) : Putting together the result files"
 python3 $scriptdir/grandeur/results.py $out
