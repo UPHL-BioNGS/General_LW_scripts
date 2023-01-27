@@ -3,23 +3,6 @@ The scripts that UPHL uses to download things from basespace and run respective 
 
 # USAGE
 
-
-## MiSeq_runs_basespace.sh
-
-MiSeq_runs_basespace.sh checks basespace every 20 minutes for a new MiSeq sequencing run. This is the script that is run in a screen on the Production account.
-
-Script downloads run data to IDGenomics_NAS and also uploads to ICA. icav2 needs to be installed and configured to work. 
-
-Currently only runs Grandeur.
-
-```
-MiSeq_runs_basespace.sh
-```
-
-## daily_SARS-CoV-2_metadata.sh
-
-daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, this script runs the Dripping Rock nextflow workflow to get the daily SARS-CoV-2 metadata file. On Sundays, it also takes the latest 20 runs and 10 random runs and creates a phylogenetic tree. This is a script that is run in a screen on the Production account.
-
 ## analysis_for_run.py
 
 analysis_for_run.py is a script that will download the sequencing run reads from BSSH once the run is 'Complete' on BSSH, start the analysis on ICA, and download results from ICA while sending updates to Slack at the UPHL Workspace notifications channel. You must already know the name of the run before this script can be used. It is intended to be ran on a screen once a run is created. Optional flags were included for more functionality:
@@ -54,4 +37,18 @@ Most likely: icav2 config incorrectly; IDS incorrect; IDS not linked to project;
 ```
 EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
+```
+
+## daily_SARS-CoV-2_metadata.sh
+
+daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, this script runs the Dripping Rock nextflow workflow to get the daily SARS-CoV-2 metadata file. On Sundays, it also takes the latest 20 runs and 10 random runs and creates a phylogenetic tree. This is a script that is run in a screen on the Production account.
+
+## LW_Grandeur.sh
+
+LW_Grandeur.sh checks basespace every 20 minutes to see if a run is complete. This is the script that is run in a screen on the Production account for each run.
+
+Script downloads run fastq files to IDGenomics_NAS and runs Grandeur on the fastq files.
+
+```
+LW_Grandeur.sh $run_name
 ```
