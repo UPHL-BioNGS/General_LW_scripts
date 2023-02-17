@@ -8,6 +8,9 @@ import glob
 import re
 from datetime import datetime, timedelta
 
+### USAGE ### python accession_for_clarity.py "path/to/files/fromclarity" "path/to/files/fromclarity.etc"
+# Must be log into or mount these servers smb://172.16.109.9 smb://168.180.220.43. Must include files, project samplesheets, from Clarity for all COVIDSEQ projects
+# DO NOT MAKE DUPLICATES IN CLARITY!!! PLEASE READ README.md and proceed with caution. 
 
 path_to_project_lists=[]
 for i in range(len(sys.argv)-1):
