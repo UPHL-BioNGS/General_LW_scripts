@@ -20,6 +20,22 @@ MiSeq_runs_basespace.sh
 
 daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, this script runs the Dripping Rock nextflow workflow to get the daily SARS-CoV-2 metadata file. On Sundays, it also takes the latest 20 runs and 10 random runs and creates a phylogenetic tree. This is a script that is run in a screen on the Production account.
 
+## accession_for_clarity.py
+
+accession_for_clarity.py is a script that creates an accessioning file for Clarity that has the new samples found in the Labware lims system that will be ready for the lab to process. The output of the script is a csv file, that must be saved as an excel file before Clarity will accept it. To be able to run the script you must have these two servers mounted on your computer; smb://172.16.109.9 and smb://168.180.220.43 or //LABWARE/ and ///DDCP/UPHL/. You also need to log into Clarity and download all samplesheets from projects with a name that starts with COVIDSeq. Do this by going to the 'Projects and Samples' tab, choosing the correct project, and clicking the modify samples button. This will insure we do not place duplicates in Clarity which causes many issues.
+
+![alt text](images/Clarity_projects_modify.png)
+
+Files will be downloaded from clicking the modify samples button. 
+
+Now to run the script ```python accession_for_clarity.py "path/to/files/fromclarity" "path/to/files/fromclarity.etc"``` ...
+
+The csv file that the script creates will be saved to the directory that you are running the script from. You must open the file in excel and save it to the excel file. Now back in Clarity click the button 'Upload Sample List' and choose the excel file.
+
+![alt text](images/Clarity_projects_to_workflow.png)
+
+Now click select group for the samples you just uploaded. Then choose 'Covidseq v1.0' after clicking 'Assign to Workflow'. And finally you are done!
+
 ## analysis_for_run.py
 
 analysis_for_run.py is a script that will download the sequencing run reads from BSSH once the run is 'Complete' on BSSH, start the analysis on ICA, and download results from ICA while sending updates to Slack at the UPHL Workspace notifications channel. You must already know the name of the run before this script can be used. It is intended to be ran on a screen once a run is created. Optional flags were included for more functionality:
