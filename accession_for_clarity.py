@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Written in Python 3.11.2. Tested on Python 3.7.11,3.8.8, 3.9.13, 3.10.8
+
+# Packages Needed pandas, openpyxl, xlrd
+# Install with: pip3 install pandas openpyxl xlrd
+
 import pandas as pd
 import os
 import sys
@@ -8,6 +13,10 @@ import glob
 import re
 from datetime import datetime, timedelta
 
+
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 ### USAGE ### python accession_for_clarity.py "path/to/files/fromclarity" "path/to/files/fromclarity.etc"
 # Must be log into or mount these servers smb://172.16.109.9 smb://168.180.220.43. Must include files, project samplesheets, from Clarity for all COVIDSEQ projects
 # DO NOT MAKE DUPLICATES IN CLARITY!!! PLEASE READ README.md and proceed with caution. 
@@ -24,9 +33,9 @@ for i in ['A','B','C','D','E','F','G','H']:
 
 # Import All_ncovid*.csv
 #ip address smb://172.16.109.9 smb://168.180.220.43
-ncovid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/ncovOverview.csv',usecols=['submitterId','sampleNumber','collectionDate','receivedDate','result','customer'])
+ncovid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/ncovOverview.csv',usecols=['submitterId','sampleNumber','collectionDate','receivedDate','result','customer'], encoding = "ISO-8859-1", low_memory=False)
 # Import NGS_Covid_*.csv
-NGS_Covid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/NGS_Covidtest.csv',usecols=['observations','customer','submitterId','sampleNumber','collectionDate','receivedDate','PlateName','PlateWell'])
+NGS_Covid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/NGS_Covidtest.csv',usecols=['observations','customer','submitterId','sampleNumber','collectionDate','receivedDate','PlateName','PlateWell'], encoding = "ISO-8859-1", low_memory=False)
 # Clean up
 end = datetime.now().date()
 plot_end=end
@@ -57,6 +66,8 @@ for i in range(len(these)):
 dels=list(set(dels))
 
 dels.sort(reverse=True)
+
+
 
 for i in dels:
     del these[i]
@@ -116,6 +127,7 @@ for k in these:
          if type(j['Sample Name']) == int:
              kf_samples.append([j['Sample Name'],atog[j['Well']-1]])
 pos=[]
+
 for i in kf_samples:
     tmp=ncovid[ncovid['sampleNumber']==i[0]]
     if len(tmp) == 0:
@@ -182,7 +194,7 @@ for j in path_to_project_lists:
     if i >0:
         in_c_tmp=pd.read_excel('%s' % j, skiprows=5, header=None)
         in_c_tmp=in_c_tmp.rename(columns=columns)
-        in_c_tmp.drop(in_c.tail(1).index,inplace=True)
+        in_c_tmp.drop(in_c.tail(1).index,inplace=True, errors='ignore')
         in_c=in_c.append(in_c_tmp, ignore_index=True)
     i=+ 1 
 
@@ -223,3 +235,5 @@ with open('accession_for_clarity%s.csv' % datetime.now().strftime("%Y_%m_%d"), '
                 continue
             f.write('%s,' %i[j])
         f.write('\n')
+
+print("A csv file has been created for Clarity at: %s/accession_for_clarity%s.csv" % (os.getcwd(),datetime.now().strftime("%Y_%m_%d")))
