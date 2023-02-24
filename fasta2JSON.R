@@ -1,27 +1,27 @@
 #!/usr/bin/env Rscript
 # Author: OLP
 # Usage: Getting metadata for daily_metadata: fast2JOSN file
-# Parameters: Run Name ;  i.e. Rscript fastas2JSON.R UT-VH00770-230212
+# Parameter: RunName :  i.e. Rscript fastas2JSON.R UT-VH00770-230212
 
 library("easypackages");libraries("grid","rbin","data.table","progress","XML","xml2","seqinr","data.table","rjson","jsonlite", "lubridate","Biostrings")
 sup <- suppressPackageStartupMessages
 sup(library(lubridate));sup(library(tidyverse))
 args = commandArgs(trailingOnly=T);
 date<-ymd(substr(args[1], 12, 17)); date
+if(nchar(args[1])==17){date<-ymd(substr(args[1], 12, 17))} else{date<-ymd(substr(args[1], 11, 16))};date
 runPath <-paste('/Volumes/NGS/Analysis/covidseq',args[1],sep="/")
 df1 = read.csv(paste(runPath,"covidseq_output/Logs_Intermediates/SampleSheetValidation/SampleSheet_Intermediate.csv",sep = "/"))
-df1<-tail(df1,-18);df1<-df1[,c(1,2)];
-colnames(df1) <- c("Sample_Accession","Sample_Type")
-M<-filter(df1, Sample_Type == "PatientSample")
-M<-M["Sample_Accession"]
-head(M,10)
-cat(crayon::blue$underline(" Detected ", length(M$Sample_Accession), " patient's samples"))
+x = apply(df1, 1, function(x) {any(grepl(x, pattern = "Patient")) });
+M<-df1[x, ][,c(1,2)]; 
+M<-cbind(M, paste(M$X.Header.,args[1],sep = "-"))
+colnames(M)<-c("Sample_Accession","runName","fileName");
+cat(" Detected ", length(M$Sample_Accession), " patient's samples")
 
 M1<-read.csv(paste('/Volumes/NGS/Analysis/covidseq',args[1],'CecretPangolin/combined_summary.csv',sep = "/"))
 head(M,10)
 #inner join tables: which patient samples have fastas
 #==========================
-MM<-merge(M, M1, by.x ='Sample_Accession', by.y='sample_id');M<-MM[1:2]
+MM<-merge(M, M1, by.x ='Sample_Accession', by.y='sample_id');M<-MM[,c(1,3)]
 cat(crayon::blue$underline(" Detected ", length(MM$Sample_Accession), " patient's samples with fasta sequence"))
 
 # Searhing Volumes/IDGenomicsNAS/COVID/daily_metadata/lims/*NGS*.csv
@@ -80,6 +80,8 @@ Epi$Epitrax_ID[is.na(Epi$Epitrax_ID)] <- "not_found"
 # ======================
 Matrix<- cbind(Epi,PatientDemographic)
 Matrix$Epitrax_ID[is.na(Matrix$Epitrax_ID)] <- "Not_found"
+lims_found<-Matrix$collectionDate; lims_found[is.na(lims_found)] <- "missing";lims_found[!is.na(lims_found)] <- "sampleNumer"
+Matrix<-cbind(Matrix,lims_found); 
 head(Matrix,30)
 
 #Getting the sequences: only PatientSamples
@@ -90,39 +92,35 @@ path<-paste(runPath,"covidseq_output/Sample_Analysis/",sep="/")
 
 head(M,21)
 seq_name<-0; sequence<-0
-counter = length(M$Sample_Accession); counter
+counter = length(M$Sample_Accession); 
 
 for (i in 1:counter){
   sample=Matrix$Sample_Accession[i]; sample
   Lyapunovv<- Sys.glob(paste(path,sample,"*/*.fasta",sep = ""),dirmark = TRUE); Lyapunovv
   fastaFile <- readDNAStringSet(Lyapunovv)
-  fastaFile
-  seq_name[i] = names(fastaFile)
   sequence[i] = paste(fastaFile)
 }
-df <- data.frame(seq_name, sequence);
+df <- data.frame(sequence);
+
 # JSON file
 # ===================
 Alist_1 = vector(mode="list", length = counter)
 Alist_1[[1]] = Matrix$Sample_Accession[1:counter]
 Alist_1[[2]] = Matrix$collectionDate[1:counter]
 Alist_1[[3]] = Matrix$patient_record_number[1:counter]
-Alist_1[[4]] = Matrix$Epitrax_ID[1:counter]
-Alist_1[[5]] = df
+Alist_1[[4]] = Matrix$fileName[1:counter]
+Alist_1[[5]] = Matrix$lims_found[1:counter]
+Alist_1[[6]] = df
 
 
 json2 <- data.frame(
-  LIMS_ID = Alist_1[[1]],
+          LIMS_ID = Alist_1[[1]],
   collection_date = Alist_1[[2]],
-  Epitrax_ID = Alist_1[[3]],
-  filename = Alist_1[[4]],
-  sequence = df)
+       Epitrax_ID = Alist_1[[3]],
+         filename = Alist_1[[4]],
+       lims_found = Alist_1[[5]],
+          df)
 
-Path2Save<-paste("",paste("R",args[1],"json",sep="."), sep = "")
-
-# Notes: /Volumes/IDGenomics_NAS/COVID/daily_metadata/working_json/
-# 1. This script is not in production yet, the json filename will appear with a preceding R ( i.e: R.UT-VH00770-230212.json) to not
-# interfere with other scripts. After the script pass the test phase it will take the R preceding the name.
-# 2. A README will be included soon
+Path2Save<-paste("/Volumes/IDGenomics_NAS/COVID/daily_metadata/working_json/",paste(args[1],"json",sep="."), sep = "")
 cat(crayon::blue$underline("fastas2Json file can be found at: ", Path2Save,"\n"))
 write_json(json2, Path2Save)
