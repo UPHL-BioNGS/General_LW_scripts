@@ -121,6 +121,6 @@ json2 <- data.frame(
        lims_found = Alist_1[[5]],
           df)
 
-Path2Save<-paste("/Volumes/IDGenomics_NAS/COVID/daily_metadata/working_json/",paste(args[1],"json",sep="."), sep = "")
+Path2Save<-paste("/Volumes/IDGenomics_NAS/COVID/daily_metadata/json/",paste(args[1],"json",sep="."), sep = "")
 cat(crayon::blue$underline("fastas2Json file can be found at: ", Path2Save,"\n"))
 write_json(json2, Path2Save)
