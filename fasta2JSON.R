@@ -7,7 +7,7 @@ library("easypackages");libraries("grid","rbin","data.table","progress","XML","x
 sup <- suppressPackageStartupMessages
 sup(library(lubridate));sup(library(tidyverse))
 args = commandArgs(trailingOnly=T);
-date<-ymd(substr(args[1], 12, 17)); date
+
 if(nchar(args[1])==17){date<-ymd(substr(args[1], 12, 17))} else{date<-ymd(substr(args[1], 11, 16))};date
 runPath <-paste('/Volumes/NGS/Analysis/covidseq',args[1],sep="/")
 df1 = read.csv(paste(runPath,"covidseq_output/Logs_Intermediates/SampleSheetValidation/SampleSheet_Intermediate.csv",sep = "/"))
