@@ -36,6 +36,7 @@ for i in ['A','B','C','D','E','F','G','H']:
 ncovid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/ncovOverview.csv',usecols=['submitterId','sampleNumber','collectionDate','receivedDate','result','customer'], encoding = "ISO-8859-1", low_memory=False)
 # Import NGS_Covid_*.csv
 NGS_Covid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/NGS_Covidtest.csv',usecols=['observations','customer','submitterId','sampleNumber','collectionDate','receivedDate','PlateName','PlateWell'], encoding = "ISO-8859-1", low_memory=False)
+NGS_Covid['receivedDate']=NGS_Covid['receivedDate'].fillna(NGS_Covid['collectionDate'])
 # Clean up
 end = datetime.now().date()
 plot_end=end
