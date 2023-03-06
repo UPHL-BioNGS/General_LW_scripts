@@ -145,8 +145,7 @@ for (i in 1:n){
     a = b =0; num_actgx[i] = 0; num_nx[i] = 0; pass_fail[i] ="fail"; c = "fail"
   }
   cat(sample," \t",a,"\t",b,"\t",c,"\n")
-
-
+}
 df_new <- as.data.frame(cbind(as.character(num_actgx), as.character(num_nx),pass_fail));
 df_new<-df_new %>% rename(num_actg = 1, num_n = 2)
 head(df_new)
