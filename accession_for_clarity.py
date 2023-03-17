@@ -56,6 +56,7 @@ for i in list_of_files:
             if datetime.strptime(i.split('/')[-1][0:10], '%Y-%m-%d') > (datetime.today()-timedelta(days=30)):
                 these.append(i)
         except:
+            print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
             continue
 dels=[]
 for i in range(len(these)):
@@ -77,6 +78,7 @@ for k in these:
     try:
         kf_plate=pd.read_excel(k,sheet_name='Export File', skiprows=9)
     except:
+        print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
         continue
     kf_samples=[]
     for i,j in kf_plate.iterrows():
@@ -104,6 +106,7 @@ for i in list_of_files:
             if datetime.strptime(i.split('/')[-1][0:10], '%Y-%m-%d') > (datetime.today()-timedelta(days=30)):
                 these.append(i)
         except:
+            print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
             continue
 dels=[]
 for i in range(len(these)):
@@ -123,6 +126,7 @@ for k in these:
  try:
          kf_plate=pd.read_excel(k,sheet_name='Export File', skiprows=9)
  except:
+        print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
         continue
  kf_samples=[]
  for i,j in kf_plate.iterrows():
