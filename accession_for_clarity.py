@@ -87,6 +87,7 @@ for k in these:
         tmp=ncovid[ncovid['sampleNumber']==i[0]]
         if len(tmp) == 0:
             print("STOP SAMPLES NOT IN NCOV FILE")
+            break
         if tmp['result'].values[0] == 'Positive for SARS-CoV-2' or tmp['result'].values[0] == 'SARS-COV-2 Detected' :
             i.append(tmp['collectionDate'].values[0])
             i.append(k.split('/')[-1][0:-5])
