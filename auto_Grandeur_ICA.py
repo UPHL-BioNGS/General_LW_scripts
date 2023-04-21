@@ -52,18 +52,18 @@ bashCommand = "icav2 projectdata upload /Volumes/IDGenomics_NAS/WGS_Serotyping/%
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
 
-time.sleep(180)
+time.sleep(300)
 
 bashCommand = "icav2 projectdata list --parent-folder /%s/ --match-mode FUZZY" % run_name
 tmp= icav_out(bashCommand)
 ica_id=tmp[0].split()[4]
 
 # Create icav2 argument
-arg = "icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_V2 --input reads:%s " % ica_id
+arg = "icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_VGrandeur-3_0_20230310_0 --input reads:%s " % ica_id
 arg = arg + "--input project_dirs:fol.fb0091ef9e4d4e515b6408da63045a75,fol.90b6b7865bc7434384e408da6377c840,fol.8802646a4148485884df08da6377c840,fol.17212ac619d44b68296008da58d44868,fol.756293fdaa3942cc3b9f08da58d44869,fol.97c3321c555a4b1c672f08da58d44868 "
 arg = arg + "--user-reference %s_Granduer_Analysis%s" % (run_name,additional_ref)
 
 print(arg)
 
 process = subprocess.Popen(arg.split(" "), stdout=subprocess.PIPE)
-print(process.communicate())
+os.system(arg)
