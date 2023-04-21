@@ -117,10 +117,11 @@ while t==0:
                 sys.exit()
         except:
             continue
-    # Wait 20 min then look again.
+    # Wait 5 min then look again.
     if t==1:
         break
-    time.sleep(1200)
+    print('Waiting for 3 min, %s') % datetime.now()
+    time.sleep(300)
 
 # Make dir that reads and anaylsis files will be saved to
 try:
@@ -202,7 +203,8 @@ while t == 0:
             break
     except:
         continue
-    time.sleep(1200)
+    print('Waiting for 3 min, %s') % datetime.now()
+    time.sleep(300)
 
 slack_message('%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
 print("%s has comleted analysis on ICA %s" % (args.run_name,datetime.now()))
