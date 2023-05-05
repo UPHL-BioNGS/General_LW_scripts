@@ -146,6 +146,14 @@ bashCommand = "icav2 projectdata link %s" % ica_target
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
 process.communicate()
 
+time.sleep(60)
+
+bashCommand = "icav2 projects enter Testing"
+process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
+process.communicate()
+
+time.sleep(10)
+
 bashCommand = "icav2 projectdata upload ./%s_samplesheet" % run_name
 process = subprocess.Popen(bashCommand.split(" "), stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 process.communicate(input=b'y')
