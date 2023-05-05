@@ -135,6 +135,7 @@ if args.analysis == 'mycosnp':
     subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # Once the run is completed it will be downloaded
+slack_message("Reads downloading into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
 # First the samplesheet must be downloaded
 bashCommand = """bs run download --config=%s
           --output= "/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads"
