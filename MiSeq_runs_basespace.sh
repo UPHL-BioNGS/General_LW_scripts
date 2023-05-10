@@ -90,7 +90,7 @@ do
         
         echo "$(date) : Now starting Grandeur" | tee -a $grandeur_log.log
         cd /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name
-        nextflow run UPHL-BioNGS/Grandeur \
+        NXF_VER=22.10.4 nextflow run UPHL-BioNGS/Grandeur \
           -profile uphl \
           --reads /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw \
           -r main \
@@ -98,7 +98,7 @@ do
           -dsl1 \
           2>> $grandeur_log.err | tee -a $grandeur_log.log
 
-        nextflow run UPHL-BioNGS/Grandeur \
+        NXF_VER=22.10.4 nextflow run UPHL-BioNGS/Grandeur \
           -profile uphl \
           --reads /Volumes/IDGenomics_NAS/WGS_Serotyping/$run_name/Sequencing_reads/Raw \
           -r main \
