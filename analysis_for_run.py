@@ -132,7 +132,7 @@ except:
 
 #If samples are directly avaiable in ICA there is no need to wait for download to start anaylsis by calling another python script
 if args.analysis == 'mycosnp':
-    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+    subprocess.call("python3 /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # Once the run is completed it will be downloaded
 slack_message("Reads downloading into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
@@ -176,7 +176,7 @@ if args.download_reads:
 
 # Start ICA Anaylsis if not mycosnp; Call other python script
 if args.analysis == 'Grandeur':
-    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+    subprocess.call("python3 /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
 
 # While loop to look in ICA to See if run is finished
 slack_message('Started %s Anaylysis on ICA and Monitoring for %s analysis' % (args.run_name,args.analysis))
