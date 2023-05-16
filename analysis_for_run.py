@@ -24,7 +24,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from importlib.machinery import SourceFileLoader
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/config.py").load_module()
+config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
 
 #Create Arguments useing argparse
 parser = argparse.ArgumentParser(description= "This script will downloads fastq files from sequencer runs; start ICA analysis using additional scripts, download ICA analysis results using additional scripts, and send Slack messages to update progress")
