@@ -25,7 +25,7 @@ from importlib.machinery import SourceFileLoader
 
 run_name = str(sys.argv[1])
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/config.py").load_module()
+config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
 
 # Function to handle the stdout of the ICA CLI tool. Returns a list of list of strings.
 def icav_out(bashCommand):
