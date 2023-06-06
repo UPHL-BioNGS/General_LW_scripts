@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-Author: John Arnn
-Released: 2023-03-20
-Version: 1.0.0
-Description:
-This script automates messaging to the UPHL slack channel to help monitor analysis that are running on ICA. 
-You provide the script with the name of the analysis and when it completes a message will be sent to slack. 
-EXAMPLE:
-python3 monitor_ica.py UT-VH0770-220915 
-"""
-
 import os
 import sys
 import subprocess
@@ -24,6 +13,12 @@ from slack_sdk.errors import SlackApiError
 from importlib.machinery import SourceFileLoader
 
 run_name = str(sys.argv[1])
+project=str(sys.argv[2])
+
+try:
+    run_type = str(sys.argv[3])
+except:
+    run_type = None
 
 config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
 
@@ -62,6 +57,9 @@ process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
 t=0
 while t == 0:
+    bashCommand = "icav2 projects enter %s" % project
+    process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
+    process.communicate()
     bashCommand = "icav2 projectanalyses list --max-items 0"
     tmp=icav_out(bashCommand)
     tmp2=[]
@@ -79,8 +77,12 @@ while t == 0:
             t=1
             break
     except:
-        continue
-    time.sleep(1200)
+        pass
+    if t==0:
+        time.sleep(1200)
 
 slack_message("%s has comleted analysis on ICA" % run_name)
 print("%s has comleted analysis on ICA" % run_name)
+
+if run_type:
+    subprocess.run(['python3','download_ica.py', run_name, run_type])
