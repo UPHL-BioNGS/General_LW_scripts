@@ -36,15 +36,23 @@ The csv file that the script creates will be saved to the directory that you are
 
 Now click select group for the samples you just uploaded. Then choose 'Covidseq v1.0' after clicking 'Assign to Workflow'. And finally you are done!
 
-## analysis_for_run.py
+# Automation Scripts for ICA 
+Currently written for Pulsenet/ARLN samples that typically run on Grandeur and Mycosnp.
 
-**NEEDS UPDATING**
+The scripts are structured to run sequentially; and can be triggered manually or by the previous scirpt.
+![alt text](images/ICA_automation.jpg)
+
+## analysis_for_run.py
 
 ```
 USAGE: Run this on a screen. It is an infinate loop and looks for new runs.
 
 EXAMPLE: python3 analysis_for_run.py
 ```
+
+## screen_run.py
+
+## download_reads.py
 
 ## auto_mycosnp_ICA.py
 
@@ -57,7 +65,7 @@ EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
 ```
 
-## auto_Granduer_ICA.py
+## auto_granduer_ICA.py
 
 This script will collect needed ICA ids to start a pipeline analysis; build the icav2 command to start, and then start the analysis.
 If analysis fails to start use the icav2 arg that is created, then use icav2 manually to troubleshoot issue.
@@ -67,3 +75,5 @@ Most likely: icav2 config incorrectly; IDS incorrect; IDS not linked to project;
 EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
 ```
+
+## download_ica.py
