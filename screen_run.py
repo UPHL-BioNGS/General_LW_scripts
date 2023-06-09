@@ -95,4 +95,4 @@ if run_type:
     print("Running moniter_ica.py")
     subprocess.run(['python3','moniter_ica.py', run_name, project, run_type])
 
-subprocess.run(["screen", "-S", "my_screen", "-X", "quit"])
+subprocess.run(["screen", "-S", "%s" % run_name, "-X", "quit"])
