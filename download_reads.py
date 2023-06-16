@@ -50,22 +50,22 @@ def slack_message(string):
 # Make dir that reads and anaylsis files will be saved to
 
 if run_type == "granduer":
-    path = "/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads"% run_name
+    path = "/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw"% run_name
 if run_type == "mycosnp":
-    path = "/Volumes/IDGenomics_NAS/fungal/%s/Sequencing_reads"% run_name
+    path = "/Volumes/IDGenomics_NAS/fungal/%s/Sequencing_reads/Raw"% run_name
 
 try:
     os.makedirs(path)
 except:
-    print("Directory Already Exits, Make sure Reads are not already downloaded and delete Directory" % datetime.now())
+    print("Directory Already Exits, Make sure Reads are not already downloaded and delete Directory %s" % datetime.now())
     sys.exit()
 
 
 # Once the run is completed it will be downloaded
-bashCommand='bs list --config=%s runs' % i
+bashCommand='bs list --config=bioinfo runs'
 tmp=bs_out(bashCommand)
 tmp=pd.DataFrame(index=[row.split()[2] for row in tmp[1:]], columns=tmp[0].split()[1:], data=[row.split()[1:4] for row in tmp[1:]])
-idd=tmp.at[arun_name,'Id']
+idd=tmp.at[run_name,'Id']
 
 
 # First the samplesheet must be downloaded
@@ -73,13 +73,13 @@ bashCommand = """bs run download --config=bioinfo
           --output= "%s"
           --id=%s
           --extension=csv
-""" % (path,run_name,idd)
+""" % (path,idd)
 
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
 output, error = process.communicate()
 
 # Now the BSSH ids must be collected into a list
-bashCommand = "bs list dataset --config=%s --input-run=%s " % (user,idd)
+bashCommand = "bs list dataset --config=bioinfo --input-run=%s " % (idd)
 tmp=bs_out(bashCommand)
 for i in range(len(tmp)):
     if tmp[i].split()[0]== 'Undetermined':
