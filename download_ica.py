@@ -57,15 +57,15 @@ def ica_download(run_type):
         tmp= icav_out(bashCommand)
         for i in tmp:
             try:
-                bashCommand = "./icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
+                bashCommand = "icav2 projectdata list --parent-folder /%s/Results/" % i.split()[0]
                 tmp= icav_out(bashCommand)
                 target_dir= i.split()[0]
                 print("Works!!!")
                 break
             except:
                 pass
-        for i in ['Results/stats/*','Results/multiqc_report.html','Results/combined/*','Results/snpeff/*']:
-            bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/fungal/%s/" % (target_dir,i, run_name)
+        for i in ['Results/stats/*','Results/multiqc_report.html','Results/combined/*','Results/snpeff/*', 'Results/samples/*']:
+            bashCommand = "icav2 projectdata download /%s/%s /Volumes/IDGenomics_NAS/fungal/%s/" % (target_dir,i, run_name)
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             process.communicate()
     if run_type == 'granduer':
@@ -77,7 +77,7 @@ def ica_download(run_type):
         tmp= icav_out(bashCommand)
         for i in tmp:
             try:
-                bashCommand =  "icav2 projectdata list --parent-folder %sgrandeur/" % i.split()[0]
+                bashCommand =  "icav2 projectdata list --parent-folder /%s/grandeur/" % i.split()[0]
                 tmp= icav_out(bashCommand)
                 target_dir= i.split()[0]
                 break
@@ -89,4 +89,4 @@ def ica_download(run_type):
             process.communicate()
 
 ica_download(run_type)
-slack_message("Files for Analysis for %s on ICA downloaded to NAS" % (run_type))
+slack_message("Files for Analysis for %s on ICA downloaded to NAS" % (run_name))
