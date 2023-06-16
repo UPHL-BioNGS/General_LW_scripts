@@ -124,7 +124,7 @@ try:
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     else:
-                        run_type= "granduer"
+                        run_type= "grandeur"
                     open_screen_and_run_script('screen_run.py',i, run_type)
                     del species
 
