@@ -85,14 +85,14 @@ while t==0:
 
 if run_type:
     print("Running download_reads.py")
-    subprocess.run(['python3','download_reads.py %s %s' % (run_name, run_type)])
+    subprocess.run(['python3','download_reads.py', run_name, run_type])
     print("Running auto_%s_ICA.py" % run_type)
     subprocess.run(['python3','auto_%s_ICA.py' % run_type ,run_name])
-    if run_type == 'granduer':
+    if run_type == 'grandeur':
         project = 'Produciton'
     if run_type == 'mycosnp':
         project = 'Testing'
     print("Running moniter_ica.py")
     subprocess.run(['python3','moniter_ica.py', run_name, project, run_type])
 
-subprocess.run(["screen", "-S", "%s" % run_name, "-X", "quit"])
+subprocess.run(["screen", "-S", "my_screen", "-X", "quit"])
