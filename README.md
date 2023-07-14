@@ -71,3 +71,18 @@ Most likely: icav2 config incorrectly; IDS incorrect; IDS not linked to project;
 EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
 ```
+
+## long_read_seq/Unicycler_ICA.sh
+
+This script is to just run Unicycler on samples that have both Nanopore and Illumina reads. This script requires several things:
+1. That icav2 is configured for the user
+2. gnu parallel is installed and running
+3. That the user is currently in the directory of the nanopore run
+4. That the user has created a sample sheet file for Donut Falls
+
+This script will enter ICA's Testing Project, upload nanopore and illumina reads to a directory specified by the first position, and manage files found in the sample sheet in the second position. It will then (hopefully) start Unicycler on ICA after the files are finished uploading.
+
+```
+EXAMPLE:
+bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
+```
