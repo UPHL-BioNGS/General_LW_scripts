@@ -8,8 +8,7 @@ Description:
 This script will collect needed files to get results from Grandeur for 
 1. The 'Finished' tab (will be discontinued in the future)
 2. As a lookup table for the 'ARLN' tab
-3. As a lookup table for the 'GC' tab - currently not needed
-4. As input for Labware 8 for 
+3. As input for Labware 8 for 
   a. ALT-NGS
   b. ARLN samples
   c. GC samples
@@ -25,7 +24,6 @@ python3 grandeur_results_files.py -g <path to grandeur results> -s <input sample
 import argparse
 import pandas as pd
 import os
-from os.path import exists
 
 version = '0.0.20230710'
 
@@ -53,11 +51,11 @@ summary    = args.grandeur + '/grandeur_summary.tsv'
 # columns for final files
 # For the results tab : top organism, serotypefinder/shigellatyper, seqsero2, coverage, warnings, blobtools, and kraken2
 finished_cols = ['wgs_id', 'organism', 'SerotypeFinder (E. coli)', 'SeqSero Organism (Salmonella)', 'Sample_Project', 'coverage', 'Pass', 'warnings']
-# needs 'WGS MLST', 'AMR genes', 'Virulence genes'
+# ARLN needs 'WGS MLST', 'AMR genes', 'Virulence genes'
 arln_cols     = ['wgs_id', 'organism', 'coverage', 'mlst', 'Sample_Project', 'amr genes', 'virulence genes']
 
 print('Getting samples from ' + args.samplesheet)
-if exists(args.samplesheet):
+if os.path.exists(args.samplesheet):
     # get all the samples from the sample sheet into a pandas dataframe
     df            = pd.read_csv(args.samplesheet, skiprows=18)
     df['lims_id'] = df['Sample_ID'].str.replace(  '-UT.*','', regex=True)
@@ -67,7 +65,7 @@ else:
     exit(1)
 
 # Getting the WGS organism from fastani or mash
-if exists(fastani):
+if os.path.exists(fastani):
     print('Getting the top organism from fastani at ' + fastani)
     fastani_df             = pd.read_csv(fastani)
     fastani_df             = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
@@ -76,7 +74,7 @@ if exists(fastani):
 
     df = pd.merge(df,fastani_df[['sample','organism']],left_on='Sample_Name', right_on='sample', how='left')
     df = df.drop('sample', axis=1)
-elif exists(mash):
+elif os.path.exists(mash):
     print("fastani results could not be found!")
     print("Getting the top organism from mash at " + mash)
     mash_df = pd.read_csv(mash)
@@ -91,7 +89,7 @@ else:
     exit(1)
 
 # Getting Salmonella seroptying information from seqsero2
-if exists(seqsero2):
+if os.path.exists(seqsero2):
     print('Getting salmonella serotype information from ' + seqsero2)
     seqsero2_df = pd.read_table(seqsero2)
     seqsero2_df['SeqSero Organism (Salmonella)'] = 'Salmonella enterica serovar ' + seqsero2_df['Predicted serotype'] + ':' + seqsero2_df['Predicted antigenic profile']
@@ -143,23 +141,19 @@ if 'blobtools_organism_(per_mapped_reads)' in summary_df.columns:
     finished_cols = finished_cols + ['blobtools_organism_(per_mapped_reads)']
     arln_cols     = arln_cols     + ['blobtools_organism_(per_mapped_reads)']
 
-def pass_fail(df):
-    if (df['coverage'] < 20 ):
-        return 'X'
-    elif (df['coverage'] >= 40):
-        return 'Y'
-    elif (df['coverage'] >=20 ) and ('Campy' in df['organism']):
-        return 'Y'
-    elif (df['coverage'] < 40) and ('Shigella' in df['organism']):
-        return 'X'
-    elif (df['coverage'] < 40) and ('Escherichia' in df['organism']):
-        return 'X'
-    elif (df['coverage'] < 30) and (df['organism'] == 'Salmonella_enterica'):
-        return 'X'
-    else:
-        return 'TBD'
-    
-df['Pass']     = df.apply(pass_fail, axis = 1)
+
+df['Pass'] = 'TBD'
+df.loc[df['coverage'] >= 40, 'Pass'] = 'Y'
+df.loc[df['coverage'] < 20,  'Pass'] = 'X'
+df.loc[(df['organism'].str.contains('Shigella', na=False))      & (df['coverage'] >= 40), 'Pass'] = 'Y'
+df.loc[(df['organism'].str.contains('Shigella', na=False))      & (df['coverage'] <  40), 'Pass'] = 'X'
+df.loc[(df['organism'].str.contains('Escherichia', na=False))   & (df['coverage'] >= 40), 'Pass'] = 'Y'
+df.loc[(df['organism'].str.contains('Escherichia', na=False))   & (df['coverage'] <  40), 'Pass'] = 'X'
+df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] >= 30), 'Pass'] = 'Y'
+df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] <  30), 'Pass'] = 'X'
+df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] >= 20), 'Pass'] = 'Y'
+df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] <  20), 'Pass'] = 'X'
+
 df             = df.sort_values('wgs_id')
 df['organism'] = df['organism'].str.replace('_',' ',regex=False)
 
@@ -201,23 +195,116 @@ if not args.list:
 
 # now for the labware 8
 
-# columns for pulsenet
 # LIMS_TEST_ID, Run Name, Genomic Coverage, AMR Gene symbol, AMR Name of closest sequence, AMR % Coverage of reference sequence, AMR % Identity to reference sequence,Virulence Gene symbol	Virulence Name of closest sequence, Virulence % Coverage of reference sequence, Virulence % Identity to reference sequence, SerotypeFInder (E. coli), SeqSero Organism (Salmonella), Run Name, Genomic Coverage, Passed QC, Shiga toxin genes identified, Allelle Code, Rep Code, PNUSA Accession, BioSample Accession, Date Uploaded to CDC, Date Uploaded to NCBI/SRA, Passed PulseNet QC
+pulsenet_labware_cols = ['LIMS_TEST_ID', 'Passed QC', 'PNUSA Accession', 'Run Name', 'Genomic Coverage', 'AMR Gene symbol', 'AMR Name of closest sequence', 'AMR % Coverage of reference sequence', 'AMR % Identity to reference sequence','Virulence Gene symbol',	'Virulence Name of closest sequence', 'Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence', 'SerotypeFInder (E. coli)', 'SeqSero Organism (Salmonella)', 'Shiga toxin genes identified', 'Allelle Code', 'Rep Code', 'BioSample Accession', 'Date Uploaded to CDC', 'Date Uploaded to NCBI/SRA', 'Passed PulseNet QC']
 
-# columns for arln:
 # LIMS_TEST_ID, Passed QC, ARLN WGS ID, WGS Organism, WGS MLST, Run Name, Genomic Coverage, AMR Gene symbol, AMR Name of closest sequence,AMR % Coverage of reference sequence,AMR % Identity to reference sequence,Virulence Gene symbol,Virulence Name of closest sequence,Virulence % Coverage of reference sequence, Virulence % Identity to reference sequence, SRA Accession, BioSample Accession, Genbank Accession, GC WGS ID, GC Percent, Avg PHRED, Clade
-arln_labware_cols  = ['LIMS_TEST_ID', 'Passed QC', 'ARLN WGS ID', 'WGS Organism', 'WGS MLST', 'Run Name', 'Genomic Coverage', 'AMR Gene symbol', 'AMR Name of closest sequence', 'AMR % Coverage of reference sequence', 'AMR % Identity to reference sequence', 'Virulence Gene symbol', 'Virulence Name of closest sequence', 'Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence', 'SRA Accession', 'BioSample Accession', 'Genbank Accession', 'GC WGS ID', 'GC Percent', 'Avg PHRED', 'Clade']
-df['LIMS_TEST_ID'] = df['lims_id']
+arln_labware_cols  = ['LIMS_TEST_ID', 'Passed QC', 'ARLN WGS ID', 'GC WGS ID', 'WGS Organism', 'WGS MLST', 'Run Name', 'Genomic Coverage', 'AMR Gene symbol', 'AMR Name of closest sequence', 'AMR % Coverage of reference sequence', 'AMR % Identity to reference sequence', 'Virulence Gene symbol', 'Virulence Name of closest sequence', 'Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence', 'SRA Accession', 'BioSample Accession', 'Genbank Accession', 'GC Percent', 'Avg PHRED', 'Clade']
 
-# GC samples
+# LIMS_TEST_ID,WGS Organism,Passed QC,Run Name,Subtype
+alt_labware_cols = ['LIMS_TEST_ID', 'WGS Organism', 'Passed QC', 'Run Name', 'Subtype']
 
-# columns for alt-ngs
-# LIMS_TEST_ID, WGS Organism, Passed QC, Run Name, Subtype
+# creating columns for unused values 'SRA Accession', 'BioSample Accession', 'Genbank Accession', 'GC WGS ID', 'GC Percent', 'Avg PHRED', 'Clade'
+optional_columns = [
+    'ARLN WGS ID', 
+    'SRA Accession', 
+    'BioSample Accession', 
+    'Genbank Accession', 
+    'GC WGS ID', 
+    'GC Percent', 
+    'Avg PHRED', 
+    'Clade', 
+    'AMR Gene symbol', 
+    'AMR Name of closest sequence', 
+    'AMR % Coverage of reference sequence', 
+    'AMR % Identity to reference sequence', 
+    'Virulence Gene symbol',
+    'Virulence Name of closest sequence',
+    'Virulence % Coverage of reference sequence', 
+    'Virulence % Identity to reference sequence', 
+    'SerotypeFInder (E. coli)', 
+    'SeqSero Organism (Salmonella)', 
+    'Shiga toxin genes identified',
+    'PNUSA Accession', 
+    'Allelle Code', 
+    'Rep Code', 
+    'Date Uploaded to CDC', 
+    'Date Uploaded to NCBI/SRA', 
+    'Passed PulseNet QC',
+    'Subtype' ]
 
+for unused in optional_columns:
+    if unused not in df.columns:
+        df[unused] = ''
 
-if args.list:
-    print("creating one file for passing samples")
+# getting final columns 'LIMS_TEST_ID', 'Passed QC', 'ARLN WGS ID', 'WGS Organism', 'WGS MLST', 'Run Name', 'Genomic Coverage', GC WGS ID
+df['LIMS_TEST_ID']                  = df['lims_id']
+df['Passed QC']                     = df['Pass']
+df['WGS Organism']                  = df['organism']
+df['WGS MLST']                      = df['mlst']
+df['Run Name']                      = df['Sample_Project']
+df['Genomic Coverage']              = df['coverage']
+
+sample_list = []
+
+if args.list and os.path.exists(args.list) :
+    print("Creating files for subset of samples")
+    with open(args.list) as f:
+        sample_list = f.read().splitlines()
 else:
-    if not exists("labware8"):
-        os.mkdir("labware8", exist_ok = True)
-    print("Creating Labware 8 files for each sample in labware 8")
+    print("Creating Labware 8 files for each sample")
+    sample_list = df['LIMS_TEST_ID'].to_list()
+
+if not os.path.exists("labware8"):
+    os.mkdir("labware8")
+
+for sample in sample_list:
+    sample_df       = df[df['LIMS_TEST_ID'] == sample ].copy()
+    sample_name     = sample_df['wgs_id'].values[0]
+    sample_organism = sample_df['WGS Organism'].values[0]
+    print("Getting results for " + sample + " / " + sample_name + " (" + sample_organism + ")" )
+    if 'GC' in sample_name:
+        sample_df['GC WGS ID'] = sample_df['wgs_id']
+    elif 'CK' in sample_name:
+        sample_df['ARLN WGS ID'] = sample_df['wgs_id']
+    #elif 'PNUSA' in sample_name:
+    #    sample_df['PNUSA Accession'] = sample_df['wgs_id']
+
+    #  'AMR Gene symbol', 'AMR Name of closest sequence', 'AMR % Coverage of reference sequence', 'AMR % Identity to reference sequence'
+    sample_amr_df = amrfinder_df[amrfinder_df['Element type'] == 'AMR'].copy()
+    sample_amr_df = sample_amr_df[sample_amr_df['Name'] == sample_name]
+    sample_amr_df['AMR Gene symbol'] = sample_amr_df['Gene symbol']
+    sample_amr_df['AMR Name of closest sequence'] = sample_amr_df['Name of closest sequence']
+    sample_amr_df['AMR % Coverage of reference sequence'] = sample_amr_df['% Coverage of reference sequence']
+    sample_amr_df['AMR % Identity to reference sequence'] = sample_amr_df['% Identity to reference sequence']
+    sample_amr_df['LIMS_TEST_ID'] = sample
+    sample_amr_df = sample_amr_df[['LIMS_TEST_ID', 'AMR Gene symbol','AMR Name of closest sequence','AMR % Coverage of reference sequence', 'AMR % Identity to reference sequence']]
+
+    #  Virulence Gene symbol,Virulence Name of closest sequence,Virulence % Coverage of reference sequence, Virulence % Identity to reference sequence
+    sample_vir_df = amrfinder_df[amrfinder_df['Element type'] == 'VIRULENCE'].copy()
+    sample_vir_df = sample_vir_df[sample_vir_df['Name'] == sample_name]
+    sample_vir_df['Virulence Gene symbol']                      = sample_vir_df['Gene symbol']
+    sample_vir_df['Virulence Name of closest sequence']         = sample_vir_df['Name of closest sequence']
+    sample_vir_df['Virulence % Coverage of reference sequence'] = sample_vir_df['% Coverage of reference sequence']
+    sample_vir_df['Virulence % Identity to reference sequence'] = sample_vir_df['% Identity to reference sequence']
+    sample_vir_df['LIMS_TEST_ID']                               = sample
+    sample_vir_df                                               = sample_vir_df[['LIMS_TEST_ID', 'Virulence Gene symbol','Virulence Name of closest sequence','Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence']]
+
+    # shiga toxin genes
+    sample_stx_df = amrfinder_df[amrfinder_df['Gene symbol'].str.contains("(?i)stx|eae")]
+    sample_stx_df = sample_stx_df[sample_stx_df['Name'] == sample_name]
+    sample_stx_df['LIMS_TEST_ID']                 = sample
+    sample_stx_df['Shiga toxin genes identified'] = sample_stx_df['Gene symbol']
+    sample_stx_df                                 = sample_stx_df[['LIMS_TEST_ID', 'Shiga toxin genes identified']]
+
+    # for known alt-ngs projects
+    if "Legionella" in sample_organism:
+        sample_df['Subtype'] = sample_df['mlst']
+    elif "pyogenes" in sample_organism:
+        sample_df['Subtype'] = sample_df['emmtyper_Predicted_emm-type']
+
+    # writing the files
+    result = pd.concat([sample_df, sample_amr_df, sample_vir_df, sample_stx_df])
+    result.to_csv('labware8/arln_'     + sample + '_results.tsv', columns = arln_labware_cols ,    index=False, sep = '\t' )
+    result.to_csv('labware8/pulsenet_' + sample + '_results.tsv', columns = pulsenet_labware_cols, index=False, sep = '\t' )
+    result.to_csv('labware8/altngs_'   + sample + '_results.tsv', columns = alt_labware_cols,      index=False, sep = '\t' )
