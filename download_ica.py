@@ -84,7 +84,7 @@ def ica_download(run_type):
             except:
                 pass
         for i in ['/grandeur/*']:
-            bashCommand = "icav2 projectdata download /%s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/" % (target_dir,i, run_name)
+            bashCommand = "icav2 projectdata download /%s%s /Volumes/IDGenomics_NAS/pulsenet_and_arln/" % (target_dir,i, run_name)
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             process.communicate()
 
