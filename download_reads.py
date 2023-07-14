@@ -50,7 +50,7 @@ def slack_message(string):
 # Make dir that reads and anaylsis files will be saved to
 
 if run_type == "granduer":
-    path = "/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw"% run_name
+    path = "/Volumes/IDGenomics_NAS/pulsenet_and_arln/%s/reads"% run_name
 if run_type == "mycosnp":
     path = "/Volumes/IDGenomics_NAS/fungal/%s/Sequencing_reads/Raw"% run_name
 
@@ -70,7 +70,7 @@ idd=tmp.at[run_name,'Id']
 
 # First the samplesheet must be downloaded
 bashCommand = """bs run download --config=bioinfo
-          --output= "%s"
+          --output="%s"
           --id=%s
           --extension=csv
 """ % (path,idd)
@@ -101,4 +101,4 @@ for i in idds:
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
 print("Reads %s at %s" % (path,datetime.now()))
-slack_message("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % path)
+slack_message("Reads downloaded into %s" % path)
