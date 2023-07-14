@@ -75,19 +75,17 @@ try:
                 try:
                     xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
                     # Parse the XML
-                    print(xml)
-                    root = ET.fromstring(xml)
-
-                    # Find the artifact element
-                    artifact_element = root.find('artifact')
+                    # Extract the limsid attribute
+                    artifact_limsids = re.findall(r'limsid="([^"]+)"', xml)
 
                     # Extract the limsid attribute
-                    limsid = artifact_element.get('limsid')
-                    print(limsid)
-                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % limsid, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-                    # Parse the XML
-                    print(xml)
-                    root = ET.fromstring(xml)
+
+                    sample_lims_ids = []
+                    for artifact_id in artifact_limsids:
+                     xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                    match = re.search(r'sample\s+limsid="([^"]+)"', xml)
+                    if match:
+                        sample_lims_ids.append(match.group(1))
 
                     # Extract sample LIMS IDs
                     sample_lims_ids = []
@@ -139,4 +137,5 @@ try:
         print("No new runs sleeping: 20 min")
         time.sleep(1200)
 except:
-    slack_message("analysis_for_run.py has errored out please restart!")
+    slack_message("screen_inf has errored out please restart!")
+
