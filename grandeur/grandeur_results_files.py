@@ -260,9 +260,9 @@ if not os.path.exists("labware8"):
 
 for sample in sample_list:
     sample_df       = df[df['LIMS_TEST_ID'] == sample ].copy()
-    sample_name     = sample_df['wgs_id'].values[0]
-    sample_organism = sample_df['WGS Organism'].values[0]
-    print("Getting results for " + sample + " / " + sample_name + " (" + sample_organism + ")" )
+    sample_name     = str(sample_df['wgs_id'].values[0])
+    sample_organism = str(sample_df['WGS Organism'].values[0])
+    print("Getting results for " + str(sample) + " / " + str(sample_name) + " (" + str(sample_organism) + ")" )
     if 'GC' in sample_name:
         sample_df['GC WGS ID'] = sample_df['wgs_id']
     elif 'CK' in sample_name:
