@@ -63,7 +63,7 @@ ica_id=tmp[0].split()[3]
 
 # Create icav2 argument
 arg = "icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_V3_1_20230523 --input reads:%s " % ica_id
-arg = arg + "--input project_dirs:fol.8d6ce115bc654a98b4b908db5cb0c8b4,fol.4cfbf2608f0542e8822a08db520d1521,fol.083bc5fdf9cc4a1fb4d708db5cb0c8b4,fol.d8e135fc30984285829c08db520d1521,fol.258c3c406d844f39822208db520d1521,fol.17e932b9ea87429b824e08db520d1521,fol.3215c978710246b6694308daf8fa4ab4,fol.34b4cd1b57ab4c2331fd08db45a02d4f,fol.dc7067b8edf9407943ef08db4a610552 "
+arg = arg + "--input project_dirs:fol.7d205c36ae244d9c4e8008db7750c8b9,fol.408c402aa78248d55c5108db778dd033,fol.e2f1ffc80fdb4b914e5b08db7750c8b9,fol.f0a50d96d1524c2b5c2b08db778dd033,fol.ab60838646ce46db4e3208db7750c8b9,fol.f1d6793bb79447074e3708db7750c8b9,fol.3215c978710246b6694308daf8fa4ab4,fol.34b4cd1b57ab4c2331fd08db45a02d4f,fol.dc7067b8edf9407943ef08db4a610552 "
 arg = arg + "--user-reference %s_Granduer_Analysis%s --storage-size medium" % (run_name,additional_ref)
 
 print(arg)
