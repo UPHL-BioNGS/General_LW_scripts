@@ -260,8 +260,9 @@ if not os.path.exists("labware8"):
 
 for sample in sample_list:
     sample_df       = df[df['LIMS_TEST_ID'] == sample ].copy()
-    sample_name     = str(sample_df['wgs_id'].values[0])
+    sample_name     = str(sample_df['Sample_Name'].values[0])
     sample_organism = str(sample_df['WGS Organism'].values[0])
+
     print("Getting results for " + str(sample) + " / " + str(sample_name) + " (" + str(sample_organism) + ")" )
     if 'GC' in sample_name:
         sample_df['GC WGS ID'] = sample_df['wgs_id']
@@ -288,14 +289,14 @@ for sample in sample_list:
     sample_vir_df['Virulence % Coverage of reference sequence'] = sample_vir_df['% Coverage of reference sequence']
     sample_vir_df['Virulence % Identity to reference sequence'] = sample_vir_df['% Identity to reference sequence']
     sample_vir_df['LIMS_TEST_ID']                               = sample
-    sample_vir_df                                               = sample_vir_df[['LIMS_TEST_ID', 'Virulence Gene symbol','Virulence Name of closest sequence','Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence']]
+    sample_vir_df = sample_vir_df[['LIMS_TEST_ID', 'Virulence Gene symbol','Virulence Name of closest sequence','Virulence % Coverage of reference sequence', 'Virulence % Identity to reference sequence']]
 
     # shiga toxin genes
     sample_stx_df = amrfinder_df[amrfinder_df['Gene symbol'].str.contains("(?i)stx|eae")]
     sample_stx_df = sample_stx_df[sample_stx_df['Name'] == sample_name]
     sample_stx_df['LIMS_TEST_ID']                 = sample
     sample_stx_df['Shiga toxin genes identified'] = sample_stx_df['Gene symbol']
-    sample_stx_df                                 = sample_stx_df[['LIMS_TEST_ID', 'Shiga toxin genes identified']]
+    sample_stx_df = sample_stx_df[['LIMS_TEST_ID', 'Shiga toxin genes identified']]
 
     # for known alt-ngs projects
     if "Legionella" in sample_organism:
