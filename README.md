@@ -3,19 +3,6 @@ The scripts that UPHL uses to download things from basespace and run respective 
 
 # USAGE
 
-
-## MiSeq_runs_basespace.sh
-
-MiSeq_runs_basespace.sh checks basespace every 20 minutes for a new MiSeq sequencing run. This is the script that is run in a screen on the Production account.
-
-Script downloads run data to IDGenomics_NAS and also uploads to ICA. icav2 needs to be installed and configured to work. 
-
-Currently only runs Grandeur.
-
-```
-MiSeq_runs_basespace.sh
-```
-
 ## daily_SARS-CoV-2_metadata.sh
 
 daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, this script runs the Dripping Rock nextflow workflow to get the daily SARS-CoV-2 metadata file. On Sundays, it also takes the latest 20 runs and 10 random runs and creates a phylogenetic tree. This is a script that is run in a screen on the Production account.
@@ -89,7 +76,6 @@ EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
 ```
 
-<<<<<<< HEAD
 ## monitor_ica.py
 The main purpose of this script is to monitor an ICA analysis until they finish using ```icav2``` or "Command line interface for the Illumina Connected Analytics". This script has two required arguments and one optional argument. The first argument is the run name, the second is the project on ICA which the analysis is running on, and the third is the the analysis type. If analysis type is given the script ```download_ica.py``` will be called when the run is finished.
  
@@ -104,7 +90,8 @@ This script is written to download analysis files from ICA to the NAS. It takes 
 ```
 EXAMPLE:
 python download_ica.py UT-VH0770-220915 mycosnp
-=======
+```
+
 ## long_read_seq/Unicycler_ICA.sh
 
 This script is to just run Unicycler on samples that have both Nanopore and Illumina reads. This script requires several things:
@@ -118,5 +105,4 @@ This script will enter ICA's Testing Project, upload nanopore and illumina reads
 ```
 EXAMPLE:
 bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
->>>>>>> main
 ```
