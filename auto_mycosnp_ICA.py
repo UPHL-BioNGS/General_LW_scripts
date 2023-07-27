@@ -26,7 +26,7 @@ import logging
 logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
-logger = logging.getLogger('download_ica.py')
+logger = logging.getLogger('auto_mycosnp_ICA.py')
 logger.setLevel(logging.DEBUG)
 
 # This funciton uses the ica CLI tool to return info from ICA
