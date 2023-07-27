@@ -37,7 +37,7 @@ The csv file that the script creates will be saved to the directory that you are
 Now click select group for the samples you just uploaded. Then choose 'Covidseq v1.0' after clicking 'Assign to Workflow'. And finally you are done!
 
 # Automation Scripts for ICA 
-Currently written for Pulsenet/ARLN samples that typically run on Grandeur and Mycosnp. The scripts are structured to run sequentially; and can be triggered manually or by the previous script. Each script send notifications to the UPHL slack channel to help monitor the progress of the sequencing analysis.
+Currently written for Pulsenet/ARLN samples that typically run on Grandeur and Mycosnp. The scripts are structured to run sequentially; and can be triggered manually or by the previous script. Each script send notifications to the UPHL slack channel to help monitor the progress of the sequencing analysis. These scripts use the python package of logging to track these scripts usage and track errors that occur while running. All scripts write to a log located at /Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log.
 ![alt text](images/ICA_automation.jpg)
 
 ## analysis_for_run.py
