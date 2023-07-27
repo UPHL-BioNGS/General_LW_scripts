@@ -9,10 +9,42 @@ from importlib.machinery import SourceFileLoader
 import xml.etree.ElementTree as ET
 import requests
 from requests.auth import HTTPBasicAuth
+from typing import Union
+import functools
+import logging
+
+logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(message)s')
+
+# create logger
+logger = logging.getLogger('analysis_for_run.py')
+logger.setLevel(logging.DEBUG)
+
+def log(_func=None, *, my_logger):
+    def decorator_log(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logger = my_logger
+            args_repr = [repr(a) for a in args]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            logger.debug(f"function {func.__name__} called with args {signature}")
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except Exception as e:
+                logger.exception(f"Exception raised in {func.__name__}. exception: {str(e)}")
+                raise e
+        return wrapper
+
+    if _func is None:
+        return decorator_log
+    else:
+        return decorator_log(_func)
 
 config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
 
 # Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
+@log(my_logger=logger)
 def bs_out(bashCommand):
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -30,6 +62,12 @@ def bs_out(bashCommand):
 # Function makes sending Slack messages as easy as using the print funcition.
 client = WebClient(token=config.token)
 channel_id = config.channel_id
+
+@log(my_logger=logger)
+def my_subprocess_run(*args, **kwargs):
+    return subprocess.run(*args, **kwargs)
+
+@log(my_logger=logger)
 def slack_message(string):
     try:
 
@@ -39,18 +77,24 @@ def slack_message(string):
         )
 
     except:
-        print("Slack Error")
-
+        logger.info("Slack Error")
+@log(my_logger=logger)
 def open_screen_and_run_script(script_path, experiment_name, run_type=None):
     # Open a new detached screen session
-    subprocess.run(["screen", "-dmS", experiment_name])
+    my_subprocess_run(["screen", "-dmS",  "%s_logging" % experiment_name])
 
     # Send the command to run the script in the screen session
     if run_type is None:
-        subprocess.run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
+        my_subprocess_run(["screen", "-S", "%s_logging" % experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
 
     else:
-        subprocess.run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
+        my_subprocess_run(["screen", "-S", "%s_logging" % experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
+
+@log(my_logger=logger)
+def my_requests_get(*args, **kwargs):
+    return requests.get(*args, **kwargs)
+
+
 try:
     x=1
     while x==1:
@@ -68,13 +112,15 @@ try:
 
         change=set(bssh_now) - set(experiments_done)
 
-        print(change)
+        logger.info(change)
 
         if len(change) > 0:
             for i in change:
                 try:
                     xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-                    # Parse the XML
+                                        # Parse the XML
+                    root = ET.fromstring(xml)
+
                     # Extract the limsid attribute
                     artifact_limsids = re.findall(r'limsid="([^"]+)"', xml)
 
@@ -82,29 +128,23 @@ try:
 
                     sample_lims_ids = []
                     for artifact_id in artifact_limsids:
-                     xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-                    match = re.search(r'sample\s+limsid="([^"]+)"', xml)
-                    if match:
-                        sample_lims_ids.append(match.group(1))
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                        match = re.search(r'sample\s+limsid="([^"]+)"', xml)
+                        if match:
+                            sample_lims_ids.append(match.group(1))
 
-                    # Extract sample LIMS IDs
-                    sample_lims_ids = []
-                    for sample_elem in root.iter('sample'):
-                        limsid = sample_elem.get('limsid')
-                        sample_lims_ids.append(limsid)
-                    print(sample_lims_ids)
                     species=[]
                     for j in sample_lims_ids:
                         xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
-                                        auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                                            auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
                         # Parse the XML data
                         root = ET.fromstring(xml)
-                        
+                                            
                         namespace_map = {
-                        'udf': 'http://genologics.com/ri/userdefined',
-                        'ri': 'http://genologics.com/ri',
-                        'file': 'http://genologics.com/ri/file',
-                        'smp': 'http://genologics.com/ri/sample'}
+                                'udf': 'http://genologics.com/ri/userdefined',
+                                'ri': 'http://genologics.com/ri',
+                                'file': 'http://genologics.com/ri/file',
+                                'smp': 'http://genologics.com/ri/sample'}
 
                         # Find the udf:field element with name="Species"
                         species_element = root.find('.//udf:field[@name="Species"]', namespaces=namespace_map)
@@ -113,12 +153,14 @@ try:
                         species_value = species_element.text
 
                         species.append(species_value)
-                    print(species)
+                    logger.info(species)
                     if len(species) > 0:
                         species=set(species)
-                except Exception as e: print(e)
+                except ValueError as ve:
+                    logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
                     slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
+                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     else:
@@ -134,8 +176,9 @@ try:
                 for item in bssh_now:
                     file.write(str(item) + '\n')
 
-        print("No new runs sleeping: 20 min")
+        logger.info("No new runs sleeping: 20 min")
         time.sleep(1200)
-except:
-    slack_message("screen_inf has errored out please restart!")
+except ValueError as ve:
+    slack_message("analysis_for_run.py has errored out please restart!")
+    logger.error('analysis_for_run.py has errored out. Error: %s' % ve)
 
