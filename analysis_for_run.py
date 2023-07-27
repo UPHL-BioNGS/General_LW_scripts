@@ -81,14 +81,14 @@ def slack_message(string):
 @log(my_logger=logger)
 def open_screen_and_run_script(script_path, experiment_name, run_type=None):
     # Open a new detached screen session
-    my_subprocess_run(["screen", "-dmS",  "%s_logging" % experiment_name])
+    my_subprocess_run(["screen", "-dmS",  experiment_name])
 
     # Send the command to run the script in the screen session
     if run_type is None:
-        my_subprocess_run(["screen", "-S", "%s_logging" % experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
 
     else:
-        my_subprocess_run(["screen", "-S", "%s_logging" % experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
 
 @log(my_logger=logger)
 def my_requests_get(*args, **kwargs):
