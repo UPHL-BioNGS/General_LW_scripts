@@ -89,6 +89,7 @@ EXAMPLE:
 python auto_mycosnp_ICA.py UT-VH0770-220915
 ```
 
+<<<<<<< HEAD
 ## monitor_ica.py
 The main purpose of this script is to monitor an ICA analysis until they finish using ```icav2``` or "Command line interface for the Illumina Connected Analytics". This script has two required arguments and one optional argument. The first argument is the run name, the second is the project on ICA which the analysis is running on, and the third is the the analysis type. If analysis type is given the script ```download_ica.py``` will be called when the run is finished.
  
@@ -103,4 +104,19 @@ This script is written to download analysis files from ICA to the NAS. It takes 
 ```
 EXAMPLE:
 python download_ica.py UT-VH0770-220915 mycosnp
+=======
+## long_read_seq/Unicycler_ICA.sh
+
+This script is to just run Unicycler on samples that have both Nanopore and Illumina reads. This script requires several things:
+1. That icav2 is configured for the user
+2. gnu parallel is installed and running
+3. That the user is currently in the directory of the nanopore run
+4. That the user has created a sample sheet file for Donut Falls
+
+This script will enter ICA's Testing Project, upload nanopore and illumina reads to a directory specified by the first position, and manage files found in the sample sheet in the second position. It will then (hopefully) start Unicycler on ICA after the files are finished uploading.
+
+```
+EXAMPLE:
+bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
+>>>>>>> main
 ```
