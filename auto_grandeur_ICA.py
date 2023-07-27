@@ -21,6 +21,13 @@ import pandas as pd
 import numpy as np
 import datetime
 import time
+import logging
+
+logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(message)s')
+
+# create logger
+logger = logging.getLogger('download_ica.py')
+logger.setLevel(logging.DEBUG)
 
 # This function uses the ica CLI tool to return info from ICA
 def icav_out(bashCommand):
@@ -35,8 +42,8 @@ def icav_out(bashCommand):
     return tmp
 
 now = datetime.datetime.now()
-print ("Current date and time : ")
-print (now.strftime("%Y-%m-%d %H:%M:%S"))
+logger.info("Current date and time : ")
+logger.info(now.strftime("%Y-%m-%d %H:%M:%S"))
 
 bashCommand = "icav2 projects enter Produciton"
 process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
@@ -66,6 +73,6 @@ arg = "icav2 projectpipelines start nextflow UPHL-BioNGS_Granduer_V3_1_20230523 
 arg = arg + "--input project_dirs:fol.7d205c36ae244d9c4e8008db7750c8b9,fol.408c402aa78248d55c5108db778dd033,fol.e2f1ffc80fdb4b914e5b08db7750c8b9,fol.f0a50d96d1524c2b5c2b08db778dd033,fol.ab60838646ce46db4e3208db7750c8b9,fol.f1d6793bb79447074e3708db7750c8b9,fol.3215c978710246b6694308daf8fa4ab4,fol.34b4cd1b57ab4c2331fd08db45a02d4f,fol.dc7067b8edf9407943ef08db4a610552 "
 arg = arg + "--user-reference %s_Granduer_Analysis%s --storage-size medium" % (run_name,additional_ref)
 
-print(arg)
+logger.info(arg)
 
 os.system(arg)
