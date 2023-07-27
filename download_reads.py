@@ -15,7 +15,7 @@ from typing import Union
 import functools
 import logging
 
-logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(message)s')
+logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
 logger = logging.getLogger('download_reads.py')
