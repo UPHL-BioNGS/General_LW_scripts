@@ -201,5 +201,12 @@ for (i in 1:n){
   path2python<-paste("python3 /home/Bioinformatics/Dripping_Rock/bin/fasta_to_json.py",args[1],sep = " ")
   path2python
   system(path2python)
-  
+
+# File to be  added to labware 8: NGS_COV_SEQ.txt
+  # -----------------
+  path<-paste(d,"NGS_COV_SEQ.txt", sep ="/")
+  f1 <-select(summary,1,13,2,3,8)
+  col_names<-c("LIMS_TEST_ID","Run Name","UPHL Submission ID","Lineage","Non-Ambiguous Bases"); colnames(f1)<-col_names;
+  write.table(f1, path, sep =",", col.names = T, row.names = F, quote = F)
+
   
