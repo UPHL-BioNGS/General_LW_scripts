@@ -1,47 +1,50 @@
 #!/usr/bin/env python3
 
-"""
-Author: John Arnn
-Released: 2022-09-20
-Version: 1.0.0
-Description:
-This script will download the reads from BSSH once run completes on sequencer, start analysis on ICA,
-and download results from ICA while sending updates to Slack at UPHL Workspace notifications channel.
-EXAMPLE:
-python analysis_for_run.py UT-VH0770-220915 -a mycosnp
-"""
-
-import os
-import sys
-import argparse
 import subprocess
-import re
 import time
-import pandas as pd
-import numpy as np
-from datetime import date, datetime
+import re
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from importlib.machinery import SourceFileLoader
+import xml.etree.ElementTree as ET
+import requests
+from requests.auth import HTTPBasicAuth
+from typing import Union
+import functools
+import logging
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/config.py").load_module()
+logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-#Create Arguments useing argparse
-parser = argparse.ArgumentParser(description= "This script will downloads fastq files from sequencer runs; start ICA analysis using additional scripts, download ICA analysis results using additional scripts, and send Slack messages to update progress")
+# create logger
+logger = logging.getLogger('analysis_for_run.py')
+logger.setLevel(logging.DEBUG)
 
-parser.add_argument('run_name', help='This is an required argument of the Run Name or Experiment name that can be found on BSSH; generated when sequecning run is started')
+def log(_func=None, *, my_logger):
+    def decorator_log(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logger = my_logger
+            args_repr = [repr(a) for a in args]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            logger.debug(f"function {func.__name__} called with args {signature}")
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except Exception as e:
+                logger.exception(f"Exception raised in {func.__name__}. exception: {str(e)}")
+                raise e
+        return wrapper
 
-parser.add_argument('--analysis','-a', choices=['mycosnp','Grandeur'], required=True, help='This tells the script what pipeline needs to run on ICA, which uses the specialized script to start the run; also which files to download once the analsis completes')
-parser.add_argument('--download_reads','-d', action='store_true', help='This is an optional argument that makes the script only monitor the run on BSSH, then download when it is completed')
-parser.add_argument('--ica_download','-i', action='store_true', help='This is an opitonal flag but analysis results will not be downloaded without this flag')
-parser.add_argument('--ica_reference', help='This is an opitonal flag to modify the ICA User Reference, it is recommended to provide this flag if an ICA analysis has already been tried. Having the same User Reference can give ICA problems.')
+    if _func is None:
+        return decorator_log
+    else:
+        return decorator_log(_func)
 
-args = parser.parse_args()
-
-# These are the config files that are on the production account
-configurations=["bioinfo"]
+config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
 
 # Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
+@log(my_logger=logger)
 def bs_out(bashCommand):
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -55,29 +58,16 @@ def bs_out(bashCommand):
     tmp=[re.sub(r"\s+", ' ', x) for x in tmp]
     return tmp
 
-# Function to handle the stdout of the ICA CLI tool. Returns a list of list of strings.
-def icav_out(bashCommand):
-    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    tmp=output.decode("utf-8")
-    tmp=tmp.split('\n')
-    tmp.pop(0)
-    tmp.pop(-1)
-    tmp.pop(-1)
-    tmp=[x.replace('\t', ' ') for x in tmp]
-    return tmp
-
-# Function to loop through files needed to be downloaded for each analysis.
-def ica_download(target_dir,files_list):
-    for i in files_list:
-        bashCommand = "icav2 projectdata download %s%s /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/" % (target_dir,i,args.run_name)
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        process.communicate()
-
 # Slack_sdk values needed for sending messages to Slack. Uses an API already set up on the Slack website for the UPHL Workspace to post messages on the notifications channel.
 # Function makes sending Slack messages as easy as using the print funcition.
 client = WebClient(token=config.token)
 channel_id = config.channel_id
+
+@log(my_logger=logger)
+def my_subprocess_run(*args, **kwargs):
+    return subprocess.run(*args, **kwargs)
+
+@log(my_logger=logger)
 def slack_message(string):
     try:
 
@@ -87,151 +77,108 @@ def slack_message(string):
         )
 
     except:
-        print("Slack Error")
+        logger.info("Slack Error")
+@log(my_logger=logger)
+def open_screen_and_run_script(script_path, experiment_name, run_type=None):
+    # Open a new detached screen session
+    my_subprocess_run(["screen", "-dmS",  experiment_name])
 
-slack_message('Monitoring %s on BSSH for %s analysis' % (args.run_name,args.analysis))
-print('Monitoring %s on BSSH %s' % (args.run_name,datetime.now()))
-# This While loops Uses the BaseSpace CLI tool to monitor the progress of the run
-t=0
-while t==0:
-    for i in configurations:
-        bashCommand='bs list --config=%s runs' % i
-        tmp=bs_out(bashCommand)
-        tmp=pd.DataFrame(index=[row.split()[2] for row in tmp[1:]], columns=tmp[0].split()[1:], data=[row.split()[1:4] for row in tmp[1:]])
-        try:
-            if tmp.at[args.run_name,'Status']=='Complete':
-                user=i
-                idd=tmp.at[args.run_name,'Id']
-                slack_message('%s is "Complete" on BSSH for %s analysis' % (args.run_name,args.analysis))
-                print('%s is "Complete" on BSSH at %s' % (args.run_name,datetime.now()))
-                t=1
-                break
-        except:
-            continue
-        try:
-            if tmp.at[args.run_name,'Status']=='Failed' or tmp.at[args.run_name,'Status']=='Stopped' or tmp.at[args.run_name,'Status']=='Needs Attention' or tmp.at[args.run_name,'Status']=='Timed Out':
-                user=i
-                idd=tmp.at[args.run_name,'Id']
-                slack_message('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % args.run_name)
-                print('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information %s' % (args.run_name,datetime.now()))
-                sys.exit()
-        except:
-            continue
-    # Wait 20 min then look again.
-    if t==1:
-        break
-    time.sleep(1200)
+    # Send the command to run the script in the screen session
+    if run_type is None:
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
 
-# Make dir that reads and anaylsis files will be saved to
+    else:
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
+
+@log(my_logger=logger)
+def my_requests_get(*args, **kwargs):
+    return requests.get(*args, **kwargs)
+
+
 try:
-    os.makedirs("/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads"% args.run_name)
-except:
-    print("Directory Already Exits, Make sure Reads are not already downloaded and delete Directory" % datetime.now())
-    sys.exit()
+    x=1
+    while x==1:
+            
+        experiments_done = []
 
-#If samples are directly avaiable in ICA there is no need to wait for download to start anaylsis by calling another python script
-if args.analysis == 'mycosnp':
-    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+        with open('experiments_done.txt', 'r') as file:
+            for line in file:
+                experiments_done.append(line.strip())
 
-# Once the run is completed it will be downloaded
-# First the samplesheet must be downloaded
-bashCommand = """bs run download --config=%s
-          --output= "/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads"
-          --id=%s
-          --extension=csv
-""" % (user,args.run_name,idd)
+        bssh_now=[]
+        tmp=bs_out('bs list --config=bioinfo runs')
+        for i in range(1,len(tmp)):
+            bssh_now.append(tmp[i].split()[2])
 
-process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-output, error = process.communicate()
+        change=set(bssh_now) - set(experiments_done)
 
-# Now the BSSH ids must be collected into a list
-bashCommand = "bs list dataset --config=%s --input-run=%s " % (user,idd)
-tmp=bs_out(bashCommand)
-for i in range(len(tmp)):
-    if tmp[i].split()[0]== 'Undetermined':
-        del tmp[i]
-        del tmp[i]
-        break
-tmp=pd.DataFrame(columns=tmp[0].split()[1:], data=[row.split()[1:4] for row in tmp[1:]])
-idds=list(tmp['Id'])
+        logger.info(change)
 
-# Download Reads from Run
-for i in idds:
-    bashCommand ="""
-    bs download dataset \
-            --config=%s \
-            --id=%s \
-            --output="/Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" \
-            --retry
-    """ % (user,i,args.run_name)
-    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-print("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw at %s" % (args.run_name,datetime.now()))
-slack_message("Reads downloaded into: /Volumes/IDGenomics_NAS/WGS_Serotyping/%s/Sequencing_reads/Raw" % args.run_name)
+        if len(change) > 0:
+            for i in change:
+                try:
+                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                                        # Parse the XML
+                    root = ET.fromstring(xml)
 
-if args.download_reads:
-    sys.exit()
+                    # Extract the limsid attribute
+                    artifact_limsids = re.findall(r'limsid="([^"]+)"', xml)
 
-# Start ICA Anaylsis if not mycosnp; Call other python script
-if args.analysis == 'Grandeur':
-    subprocess.call("python /home/Bioinformatics/General_LW_scripts/auto_%s_ICA.py %s %s" % (args.analysis,args.run_name,args.ica_reference), shell=True)
+                    # Extract the limsid attribute
 
-# While loop to look in ICA to See if run is finished
-slack_message('Started %s Anaylysis on ICA and Monitoring for %s analysis' % (args.run_name,args.analysis))
-print('Started %s Anaylysis on ICA and Monitoring at %s' % (args.run_name,datetime.now()))
-bashCommand = "icav2 projects enter Testing"
-process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
-process.communicate()
-t=0
-while t == 0:
-    bashCommand = "icav2 projectanalyses list --max-items 0"
-    tmp=icav_out(bashCommand)
-    tmp2=[]
-    for i in range(len(tmp)):
-        if args.run_name in tmp[i]:
-            tmp2.append(tmp[i])
-    try:
-        if tmp2[-1].split()[-1] == 'SUCCEEDED':
-            slack_message('%s is "SUCCEEDED" on ICA for %s analysis' % (args.run_name,args.analysis))
-            print('%s is "SUCCEEDED" on ICA %s' % (args.run_name,datetime.now()))
-            t=1
-        if tmp2[-1].split()[-1] == 'FAILED':
-            slack_message('%s is "FAILED" on ICA for %s analysis' % (args.run_name,args.analysis))
-            print('%s is "FAILED" on ICA %s' % (args.run_name,datetime.now()))
-            t=1
-            break
-    except:
-        continue
-    time.sleep(1200)
+                    sample_lims_ids = []
+                    for artifact_id in artifact_limsids:
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                        match = re.search(r'sample\s+limsid="([^"]+)"', xml)
+                        if match:
+                            sample_lims_ids.append(match.group(1))
 
-slack_message('%s has comleted analysis on ICA for %s analysis' % (args.run_name,args.analysis))
-print("%s has comleted analysis on ICA %s" % (args.run_name,datetime.now()))
+                    species=[]
+                    for j in sample_lims_ids:
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
+                                            auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                        # Parse the XML data
+                        root = ET.fromstring(xml)
+                                            
+                        namespace_map = {
+                                'udf': 'http://genologics.com/ri/userdefined',
+                                'ri': 'http://genologics.com/ri',
+                                'file': 'http://genologics.com/ri/file',
+                                'smp': 'http://genologics.com/ri/sample'}
 
-# Now that the analysis has 'SUCCEEDED', the most important files needed for analysis are downloaded
-if args.ica_download:
-    bashCommand = "icav2 projectdata list --file-name %s --match-mode FUZZY" % args.run_name
-    tmp= icav_out(bashCommand)
-    for i in tmp:
-       try:
-            bashCommand = "./icav2 projectdata list --parent-folder %sResults/" % i.split()[0]
-            tmp= icav_out(bashCommand)
-            target_dir= i.split()[0]
-            break
-        except:
-            pass
-        try:
-            bashCommand = "./icav2 projectdata list --parent-folder %sgrandeur/" % i.split()[0]
-            tmp= icav_out(bashCommand)
-            target_dir= i.split()[0]
-            break
-        except:
-            pass
-    mycosnp_files=['Results/stats/*','Results/multiqc_report.html','Results/combined/*']
-    Grandeur_files=['grandeur/*']
-    if args.analysis == Grandeur:
-        ica_download(target_dir,Grandeur_files)
-    if args.analysis == mycosnp:
-        ica_download(target_dir,mycosnp_files)
+                        # Find the udf:field element with name="Species"
+                        species_element = root.find('.//udf:field[@name="Species"]', namespaces=namespace_map)
 
-print("analysis_for_run.py completed Successfully at %s" % datetime.now())
-slack_message('analysis_for_run.py completed Successfully %s for %s analysis' % (args.run_name,args.analysis))
+                        # Extract the value of the udf:field element
+                        species_value = species_element.text
+
+                        species.append(species_value)
+                    logger.info(species)
+                    if len(species) > 0:
+                        species=set(species)
+                except ValueError as ve:
+                    logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
+                if 'species' in locals():
+                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
+                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
+                    if 'Candida' in species:
+                        run_type = "mycosnp"
+                    else:
+                        run_type= "grandeur"
+                    open_screen_and_run_script('screen_run.py',i, run_type)
+                    del species
+
+                else:
+                    slack_message("New Sequecning Run Started: %s" %  change)
+                    open_screen_and_run_script('screen_run.py',i)
+
+            with open('experiments_done.txt', 'w') as file:
+                for item in bssh_now:
+                    file.write(str(item) + '\n')
+
+        logger.info("No new runs sleeping: 20 min")
+        time.sleep(1200)
+except ValueError as ve:
+    slack_message("analysis_for_run.py has errored out please restart!")
+    logger.error('analysis_for_run.py has errored out. Error: %s' % ve)
+
