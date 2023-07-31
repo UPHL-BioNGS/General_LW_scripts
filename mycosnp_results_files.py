@@ -251,6 +251,7 @@ for sample in sample_list:
     sample_organism = str(sample_df['WGS Organism'].values[0])
 
     # Writing the files for each sample separately
-    arln_filename = 'labware8/arln_' + sample + '_results.txt'
-    sample_df.to_csv(arln_filename, columns=arln_labware_cols, index=False, sep='\t')
+    arln_filename = 'labware8/arln_' + sample + '_results.csv'  # .csv file extension for labware8
+    sample_df.to_csv(arln_filename, columns=arln_labware_cols, index=False, sep=',') 
+
 
