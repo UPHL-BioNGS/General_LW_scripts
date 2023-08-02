@@ -5,7 +5,7 @@
 # last modified on July-26-2023
 
 library("easypackages");libraries("grid","rbin","data.table","progress","XML"
-                                  ,"xml2","seqinr","data.table","readr", "lubridate")
+                                  ,"xml2","seqinr","data.table","readr", "lubridate","gargle","googlesheets4")
 sup <- suppressPackageStartupMessages
 sup(library(lubridate));sup(library(tidyverse));options("width"=300)
 args = commandArgs(trailingOnly=T)#
@@ -202,11 +202,23 @@ for (i in 1:n){
   path2python
   system(path2python)
 
-# File to be  added to labware 8: NGS_COV_SEQ.txt
-  # -----------------
+  # File to be  added to labware 8: NGS_COV_SEQ.txt
+  # ========================
   path<-paste(d,"NGS_COV_SEQ.txt", sep ="/")
   f1 <-select(summary,1,13,2,3,8)
   col_names<-c("LIMS_TEST_ID","Run Name","UPHL Submission ID","Lineage","Non-Ambiguous Bases"); colnames(f1)<-col_names;
   write.table(f1, path, sep =",", col.names = T, row.names = F, quote = F)
 
-  
+# Adding results to SARS-CoV-2 NGS Tracking/Finished sheet.
+# =============================
+tokenPar <- readRDS("/Volumes/NGS/Bioinformatics/Lin/secrets/7a6077d23f6776ccc63f8f70bc12b214_olinares-perdomo@utah.gov")
+gs4_auth(token = tokenPar)
+page<-"https://docs.google.com/spreadsheets/d/1N_d2V6XESUeGTlb-uJIe_yPkHBe5qqXLFWWXY86wJZU/edit#gid=572325282"
+RunResults<-read.csv(dx, header = T)
+col_names<-c("Lab ID","Submission ID","Collection Date","Sequencing run","Pangolin Lineage (updated 2021-08-10)",
+              "Number of non-ambiguous bases","Clade") 
+colnames(RunResults)<-col_names; sheet_id<-page
+sheet_append(sheet_id, data = RunResults)
+cat(crayon::bold(nrow(RunResults), "columns have been added to SARS-CoV-2 NGS Tracking/Finished sheet ralated to run",args[1] ,"\n"))
+
+
