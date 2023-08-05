@@ -1,21 +1,21 @@
 #!/usr/bin/env Rscript
 # Author: OLinares
 # Usage: Getting metadata covid stuff: ngs file, summary, data from NGS tracking system
-# Parameter: Run Name ;  i.e. Rscript covid_dataFiles.R UT-A01290-230627 or Rscript covid_dataFiles.R UT-VH00770-230714
-# last modified on July-26-2023
+# Parameter: Run Name ;  i.e. Rscript covid_files.R UT-A01290-230627 or Rscript covid_dataFiles.R UT-VH00770-230714
+# last modified on August-04-2023
 
 library("easypackages");libraries("grid","rbin","data.table","progress","XML"
                                   ,"xml2","seqinr","data.table","readr", "lubridate","gargle","googlesheets4")
 sup <- suppressPackageStartupMessages
 sup(library(lubridate));sup(library(tidyverse));options("width"=300)
-args = commandArgs(trailingOnly=T)#
+args = commandArgs(trailingOnly=T)
 
 if(nchar(args[1])==17){date<-ymd(substr(args[1], 12, 17))} else{date<-ymd(substr(args[1], 11, 16))};date
 runPath <-paste('/Volumes/NGS/Analysis/covidseq',args[1],sep="/")
 df1 = read.csv(paste(runPath,"covidseq_output/Logs_Intermediates/SampleSheetValidation/SampleSheet_Intermediate.csv" ,sep = "/"))
 df1
 
-x = apply(df1, 1, function(x) {any(grepl(x, pattern = "Patient")) });
+x = apply(df1, 1, function(x) {any(grepl(x, pattern = "Patient")) })
 
 
 
@@ -107,9 +107,7 @@ df3 = read.table(file = paste(runPath,"covidseq_output/Logs_Intermediates/VirusD
                  sep = '\t', header = T); 
 df4 = read.csv(paste(runPath,"covidseq_output/Logs_Intermediates/FastqGeneration/Reports/Demultiplex_Stats.csv",sep ="/"))
 df4<-select(df4, c("SampleID","X..Reads","Mean.Quality.Score..PF."))
-var <-paste('',args[1],sep='-')
-df4<-df4 %>% mutate_at("SampleID", str_replace, var, ""); df4<-df4 %>% rename(Num_reads = 2, Mean_Quality_Score = 3)
-
+colnames(df4)<-c("SampleID","Num_reads","Mean_Quality_Score")
 
 # Random Number Generator (RNG) for Sample_IDs
 # =========================
@@ -170,7 +168,7 @@ for (i in 1:n){
 }
   
   df_new <- as.data.frame(cbind(as.character(num_actgx), as.character(num_nx),pass_fail)); 
-  df_new<-df_new %>% rename(num_actg = 1, num_n = 2)
+  df_new<-df_new %>% dplyr::rename(num_actg = 1, num_n = 2)
   head(df_new)
   summary<-cbind(summary1,df_new);
   head(summary)
@@ -185,14 +183,14 @@ for (i in 1:n){
   # Saving file summary file at  /Volumes/NGS/Analysis/covidseq/$runName
   # ==========================
   d=paste(runPath,'Rsumcovidseq',sep="/");dir.create(file.path(d,"" ), recursive = TRUE); p1<-Sys.time()
-  dx<- paste(d,'/Rcovidseq_summary-',paste0(Sys.Date(),'-',hour(Sys.time()),'-',minute(Sys.time()),'-',second(Sys.time())),".csv",sep=""); 
+  dx<- paste(d,'/loco-Rcovidseq_summary-',paste0(Sys.Date(),"-",hour(Sys.time()),'-',minute(Sys.time()),'-YYMMDD-hhmm'),".csv",sep="")
   write.csv(summary,dx,row.names=FALSE)
   cat(crayon::bold$underline("Summary is complete and can be found at: ",d,"\n"))
   head(summary)
   
   # Creating a file for NGS tracking system for copy/paste
   # ===========================
-  dx<- paste(d,'/NGS_Tracking-',paste0(Sys.Date(),'-',hour(Sys.time()),'-',minute(Sys.time()),'-',second(Sys.time())),".csv",sep=""); 
+  dx<- paste(d,'/NGS_Tracking-',paste0(Sys.Date(),'-',hour(Sys.time()),'-',minute(Sys.time())),".csv",sep=""); 
   write.csv(select(summary,"SampleNumber","Sample_ID","collectionDate","Run Name","lineage","num_actg","clade")
             ,dx,row.names=FALSE)
   
