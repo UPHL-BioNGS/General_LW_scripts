@@ -163,6 +163,8 @@ try:
                     logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
+                    elif len(species) < 1:
+                       run_type = ""
                     else:
                         run_type= "grandeur"
                     open_screen_and_run_script('screen_run.py',i, run_type)
