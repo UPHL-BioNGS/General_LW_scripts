@@ -13,6 +13,8 @@ import glob
 import re
 from datetime import datetime, timedelta
 
+print("Running!!!")
+
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -24,6 +26,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 path_to_project_lists=[]
 for i in range(len(sys.argv)-1):
     path_to_project_lists.append(str(sys.argv[i+1]))
+    print('Import %d' % i)
 
 atog=[]
 for i in ['A','B','C','D','E','F','G','H']:
@@ -34,8 +37,10 @@ for i in ['A','B','C','D','E','F','G','H']:
 # Import All_ncovid*.csv
 #ip address smb://172.16.109.9 smb://168.180.220.43
 ncovid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/ncovOverview.csv',usecols=['submitterId','sampleNumber','collectionDate','receivedDate','result','customer'], encoding = "ISO-8859-1", low_memory=False)
+print("Read ncovid!")
 # Import NGS_Covid_*.csv
 NGS_Covid=pd.read_csv('/Volumes/LABWARE/Shared_Files/Mirth/COVID_data_import/NGS_Covidtest.csv',usecols=['observations','customer','submitterId','sampleNumber','collectionDate','receivedDate','PlateName','PlateWell'], encoding = "ISO-8859-1", low_memory=False)
+print("Read NGS_Covid")
 NGS_Covid['receivedDate']=NGS_Covid['receivedDate'].fillna(NGS_Covid['collectionDate'])
 # Clean up
 end = datetime.now().date()
@@ -134,16 +139,17 @@ for k in these:
              kf_samples.append([j['Sample Name'],atog[j['Well']-1]])
 pos=[]
 
-for i in kf_samples:
-    tmp=ncovid[ncovid['sampleNumber']==i[0]]
-    if len(tmp) == 0:
-       print("STOP SAMPLES NOT IN NCOV FILE")
-       break
-    if tmp['result'].values[0] == 'Detected' :
-        i.append(tmp['collectionDate'].values[0])
-        i.append(k.split('/')[-1][0:-5])
-        positives.append(i)
-kfs2 = pd.DataFrame(positives, columns=['Sample Name','Well','collectionDate','Batch ID'])
+if kf_samples > 0 :
+    for i in kf_samples:
+        tmp=ncovid[ncovid['sampleNumber']==i[0]]
+        if len(tmp) == 0:
+            print("STOP SAMPLES NOT IN NCOV FILE")
+        break
+        if tmp['result'].values[0] == 'Detected' :
+            i.append(tmp['collectionDate'].values[0])
+            i.append(k.split('/')[-1][0:-5])
+            positives.append(i)
+    kfs2 = pd.DataFrame(positives, columns=['Sample Name','Well','collectionDate','Batch ID'])
 
 
 #Get Panther Tubes
@@ -171,11 +177,12 @@ tmp = kfs.rename(columns={'Sample Name':'Sample/Name','Well':'Sample/Well Locati
                       'Batch ID':'Container/Name','collectionDate':'UDF/Sample Collection DateTime'})
 
 # Merge kfs2 in clarity
-tmp = kfs2.rename(columns={'Sample Name':'Sample/Name','Well':'Sample/Well Location',
-                          'Batch ID':'Container/Name','collectionDate':'UDF/Sample Collection DateTime'})
-tmp['UDF/Provider Code'] = 'UPHL'
-clarity = clarity.append(tmp, ignore_index=True)
-    
+if kf_samples > 0 :
+    tmp = kfs2.rename(columns={'Sample Name':'Sample/Name','Well':'Sample/Well Location',
+                            'Batch ID':'Container/Name','collectionDate':'UDF/Sample Collection DateTime'})
+    tmp['UDF/Provider Code'] = 'UPHL'
+    clarity = clarity.append(tmp, ignore_index=True)
+
 #tmp = tmp.drop(columns= ['ORF1ab Ct','N gene Ct','S gene Ct'])
 tmp['UDF/Provider Code'] = 'UPHL'
 clarity = clarity.append(tmp, ignore_index=True)
@@ -186,6 +193,7 @@ tmp=ppanther.rename(columns={'sampleNumber':'Sample/Name',
 tmp = tmp.drop(columns= ['submitterId','result'])
 tmp['Sample/Name'] = tmp['Sample/Name'].astype(int)
 clarity = clarity.append(tmp, ignore_index=True)
+
 
 # Filter Out Samples Already in Clarity
 i=0
@@ -201,8 +209,10 @@ for j in path_to_project_lists:
         in_c_tmp=pd.read_excel('%s' % j, skiprows=5, header=None)
         in_c_tmp=in_c_tmp.rename(columns=columns)
         in_c_tmp.drop(in_c.tail(1).index,inplace=True, errors='ignore')
+        in_c_tmp['Sample/Name'] = pd.to_numeric(in_c_tmp['Sample/Name'], errors='coerce')
         in_c=in_c.append(in_c_tmp, ignore_index=True)
-    i=+ 1 
+    i=+ 1
+    print("Imported: %s" % j)
 
 samples = in_c['Sample/Name'].tolist()
 
