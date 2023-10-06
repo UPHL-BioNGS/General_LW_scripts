@@ -109,19 +109,19 @@ df['coverage'] = df['coverage'].round(2)
 
 # getting O and H groups
 if 'serotypefinder_Serotype_O' in summary_df.columns:
-    if 'shigatyper_Hit' and 'mash_organism' in summary_df.columns:
+    if 'shigatyper_Hit' in summary_df.columns and 'mash_organism' in summary_df.columns:
         print('Double checking E. coli organism with shigatyper results')
         ecoli_df = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
         ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
         ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
         ecoli_df['ecoli_organism'] = "Escherichia coli"
-        ecoli_df.loc[ecoli_df['shigatyper_Hit'].str.contains('ipaH'), 'ecoli_organism'] = 'Shigella'
+        ecoli_df.loc[ecoli_df['shigatyper_Hit'].str.contains('ipaH', na=False), 'ecoli_organism'] = 'Shigella'
         ecoli_df['SerotypeFinder (E. coli)'] = ecoli_df['ecoli_organism'] + " " + ecoli_df['serotypefinder_Serotype_O'] + ":" + ecoli_df['serotypefinder_Serotype_H']
 
         df = pd.merge(df,ecoli_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
     else:
-        summary_df['SerotypeFinder (E. coli)'] = summary_df['serotypefinder_Serotype_O'] + ":" + summary_df['serotypefinder_Serotype_H']
+        summary_df['SerotypeFinder (E. coli)'] = summary_df['serotypefinder_Serotype_O'].apply(str) + ':' + summary_df['serotypefinder_Serotype_H'].apply(str)
         
         df = pd.merge(df,summary_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
@@ -167,7 +167,7 @@ print('Getting additional information for ARLN tab')
 
 print('Getting MLST information from ' + mlst)
 mlst_df         = pd.read_table(mlst)
-mlst_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST']
+mlst_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST'].astype('str')
 df              = pd.merge(df,mlst_df[['sample','mlst']],left_on='Sample_Name', right_on='sample', how='left')
 df              = df.drop('sample', axis=1)
 
