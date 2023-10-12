@@ -1,3 +1,21 @@
+#!/usr/bin/env python3
+
+"""
+Author: John Arnn
+Release Date: 10/12/2023
+
+Usage:
+This script is used for the collection of Unquie IDs found in Clarity for all samples UPHL NGS processes.
+It uses the Clarity API to retrieve data so you must have a active user account and password.
+You also need to provide one of three flags:
+    --all will download every samples unique ids. Tens of thousands of API calls so it takes at least 45 min to run.
+    --list 1234,1234,1234 Provide the uphl accession followed by a , with no spaces for results for specfic samples
+    --file provide a path to a txt file that has each sample seperated by a new line
+
+The output of this script is a csv file into the directory the script was ran in named clarity_ids_output.csv.
+OR use flag '--output' to provide full path and name of file
+"""
+
 import argparse
 import xml.etree.ElementTree as ET
 import requests
@@ -10,6 +28,7 @@ parser = argparse.ArgumentParser(description="A script that accepts user, passwo
 # Required arguments
 parser.add_argument("--user", help="User name")
 parser.add_argument("--password", help="User's password")
+parser.add_argument("--output", help="Creates csv of all sampels")
 
 # Either list or file must be provided
 group = parser.add_mutually_exclusive_group(required=True)
@@ -49,40 +68,85 @@ if args.list:
 if args.file:
     sample_lims_ids = []
 
-    with open(args.fil, 'r') as file:
+    with open(args.file, 'r') as file:
         for line in file:
             sample_lims_ids.append(line.strip())
 
-limsids = {}
-for j in sample_lims_ids:
-    print(j)
-    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples?name=%s" % j, 
-        auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
-    # Parse the XML data
-    limsids[j]=(re.findall(r'limsid="([^"]+)"', xml))
 
-ids_df=[]
+if not args.all:
+    limsids = {}
+    for j in sample_lims_ids:
+        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples?name=%s" % j, 
+            auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
+        # Parse the XML data
+        limsids[j]=(re.findall(r'limsid="([^"]+)"', xml))
 
-for j in limsids.keys():
-    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % limsids[j][0], 
-        auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
-    # Parse the XML data
-    root = ET.fromstring(xml)
-                                            
-    namespace_map = {
-                    'udf': 'http://genologics.com/ri/userdefined',
-                    'ri': 'http://genologics.com/ri',
-                    'file': 'http://genologics.com/ri/file',
-                    'smp': 'http://genologics.com/ri/sample'}
+    ids_df=[]
 
-    # Find the udf:field element with name="Species"
-    ids=[]
-    for i in udfs:
-        species_element = root.find('.//udf:field[@name="%s"]'% i, namespaces=namespace_map)
+    for j in limsids.keys():
         try:
-            ids.append(species_element.text)
-        except:
-            ids.append("")
-    ids_df.append([j]+ids)
+            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % limsids[j][0], 
+                auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
+            # Parse the XML data
+            root = ET.fromstring(xml)
+                                                    
+            namespace_map = {
+                            'udf': 'http://genologics.com/ri/userdefined',
+                            'ri': 'http://genologics.com/ri',
+                            'file': 'http://genologics.com/ri/file',
+                            'smp': 'http://genologics.com/ri/sample'}
 
-pd.DataFrame(ids_df, columns = ['Sample_ID']+udfs).to_csv('clarity_ids_output.csv', index=False)
+            # Find the udf:field element with name="Species"
+            ids=[]
+            for i in udfs:
+                species_element = root.find('.//udf:field[@name="%s"]'% i, namespaces=namespace_map)
+                try:
+                    ids.append(species_element.text)
+                except:
+                    ids.append("")
+            ids_df.append([j]+ids)
+
+        except:
+            continue
+
+    if args.output:
+        pd.DataFrame(ids_df, columns = ['Sample_ID']+udfs).to_csv(args.output, index=False)
+    else:
+        pd.DataFrame(ids_df, columns = ['Sample_ID']+udfs).to_csv('clarity_ids_output.csv', index=False)
+
+else:
+    ids_df=[]
+
+    for j in sample_lims_ids:
+        try:
+            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
+                auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
+            # Parse the XML data
+
+            name = re.findall(r'<name>(.*?)</name>', xml)
+
+            root = ET.fromstring(xml)
+                                                    
+            namespace_map = {
+                            'udf': 'http://genologics.com/ri/userdefined',
+                            'ri': 'http://genologics.com/ri',
+                            'file': 'http://genologics.com/ri/file',
+                            'smp': 'http://genologics.com/ri/sample'}
+
+            # Find the udf:field element with name="Species"
+            ids=[]
+            for i in udfs:
+                species_element = root.find('.//udf:field[@name="%s"]'% i, namespaces=namespace_map)
+                try:
+                    ids.append(species_element.text)
+                except:
+                    ids.append("")
+            ids_df.append([name]+ids)
+
+        except:
+            continue
+
+    if args.output:
+        pd.DataFrame(ids_df, columns = ['Sample_ID']+udfs).to_csv(args.output, index=False)
+    else:
+        pd.DataFrame(ids_df, columns = ['Sample_ID']+udfs).to_csv('clarity_ids_output.csv', index=False)
