@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+"""
+Author: Tom Iverson
+Released: 2023-10-12
+Version: 1.0.0
+Description:
+This script merges and performs data cleaning on the two C. auris LIMS exports. Copies of the two LIMS export files must be in the same directory as the script to run.
+EXAMPLE:
+python merge_c_auris_LIMS_export_files.py
+"""
+# Necessary modules: pandas library - for data manipulation and analysis ; os - to provide a way of using operating system-dependent functionality like reading or writing to the file system.
+
 import pandas as pd
 import os
 
