@@ -106,3 +106,30 @@ This script will enter ICA's Testing Project, upload nanopore and illumina reads
 EXAMPLE:
 bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
 ```
+
+## merge_c_auris_LIMS_export_files.py
+
+This script is used to gather sample metadata from recent sequencing runs of C. auris and to extract any additional data required through WGS analysis report requests.
+
+The C. auris LIMS export consists of two reports:
+
+1. ‘C_AURIS_Positive_Colony_Daily.csv’ which contains patient metadata for detection of colonization of Candida auris.
+2. ‘C_AURIS_Positive_Isolates_Daily.csv’ which contains patient metadata for confirmed C. auris isolates.
+   
+Both reports are generated daily and found on the LABWARE server (smb://172.16.109.9) at ‘/Volumes/LABWARE/Shared_Files/PHT/C_AURIS_DAILY’ and must be copied to the location of the script.
+
+This script:
+
+1. Uses the pandas library to read both CSV reports into dataframes.
+2. Opts out of redundant columns.
+3. Merges both reports.
+4. Exports the merged data into an Excel file.
+5. Creates a parent directory (C_auris_LIMS_export_*date*) for the saved Excel file.
+6. Deletes the copied C. auris LIMS csv reports
+   
+```
+EXAMPLE:
+python merge_c_auris_LIMS_export_files.py
+```
+
+The resulting merged Excel file assists in gathering City/State data for each sequenced C. auris sample as well as gathering collection dates and specimen types.
