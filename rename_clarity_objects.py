@@ -17,14 +17,15 @@ from lxml import etree
 import requests
 from requests.auth import HTTPBasicAuth
 import re
+import sys
 
 
 parser = argparse.ArgumentParser(description="A script that updates Clarity Derived Samples and Container names")
     
 # Required arguments
-parser.add_argument("--user", help="User name")
-parser.add_argument("--password", help="User's password")
-parser.add_argument("--new_name", help="What you want to rename the sample too")
+parser.add_argument("--user", required=True, help="User name")
+parser.add_argument("--password", required=True, help="User's password")
+parser.add_argument("--new_name", required=True, help="What you want to rename the sample too")
 
 # Either list or file must be provided
 group = parser.add_mutually_exclusive_group(required=True)
@@ -34,6 +35,15 @@ group.add_argument("--container", help="limsid of container")
 args = parser.parse_args()
 
 headers = {'Content-Type': 'application/xml'}
+
+
+# Check User Name and Password
+xml = (requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % 'WAG357A292', 
+        auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
+check=(re.findall(r'<message>(.*?)</message>', xml))
+
+if check == ['Unauthorized']:
+    sys.exit('User name or password is unauthorized. Please check username and password!')
 
 if args.container:
     info=requests.get(
