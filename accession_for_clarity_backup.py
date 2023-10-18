@@ -81,8 +81,8 @@ tmp = tmp.drop(columns= ['observations'])
 clarity = clarity.append(tmp, ignore_index=True)
 
 #tmp = tmp.drop(columns= ['ORF1ab Ct','N gene Ct','S gene Ct'])
-tmp['UDF/Provider Code'] = 'UPHL'
-clarity = clarity.append(tmp, ignore_index=True)
+#tmp['UDF/Provider Code'] = 'UPHL'
+#clarity = clarity.append(tmp, ignore_index=True)
 
 tmp=ppanther.rename(columns={'sampleNumber':'Sample/Name',
                       'collectionDate':'UDF/Sample Collection DateTime',
