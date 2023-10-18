@@ -26,8 +26,8 @@ import pandas as pd
 parser = argparse.ArgumentParser(description="A script that accepts user, password, and data source options.")
     
 # Required arguments
-parser.add_argument("--user", help="User name")
-parser.add_argument("--password", help="User's password")
+parser.add_argument("--user", required=True, help="User name")
+parser.add_argument("--password", required=True, help="User's password")
 parser.add_argument("--output", help="Creates csv of all sampels")
 
 # Either list or file must be provided
@@ -42,6 +42,14 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 udfs=['ARLN ID','CDC ID','GCWGS ID','GISP ID','PNUSA Number']
+
+# Check User Name and Password
+xml = (requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % 'WAG357A292', 
+        auth=HTTPBasicAuth(args.user, args.password)).content).decode("utf-8")
+check=(re.findall(r'<message>(.*?)</message>', xml))
+
+if check == ['Unauthorized']:
+    sys.exit('User name or password is unauthorized. Please check username and password!')
 
 if args.all:
     sample_lims_ids = []
