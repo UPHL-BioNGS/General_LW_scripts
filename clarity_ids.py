@@ -14,6 +14,8 @@ You also need to provide one of three flags:
 
 The output of this script is a csv file into the directory the script was ran in named clarity_ids_output.csv.
 OR use flag '--output' to provide full path and name of file
+
+Users must have an account in Clarity that has the System Adminastrator Role.
 """
 
 import argparse
