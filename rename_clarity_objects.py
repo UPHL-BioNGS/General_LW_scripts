@@ -8,6 +8,8 @@ Usage:
 This script is to be used to rename artifacts and containers in Clarity. You need to provide your Clarity 
 username and password, the lims id of the sample you want to change, weather its a artifact or container,
 and the new_name.
+
+Users must have an account in Clarity that has the System Adminastrator Role.
 """
 
 
