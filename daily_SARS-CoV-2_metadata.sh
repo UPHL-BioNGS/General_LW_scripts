@@ -6,7 +6,7 @@ For creating the daily metadata file
 
 bash daily_metadata_file.sh
 
-Version: 2022-11-16
+Version: 2023-01-24
 "
 
 echo "$USAGE"
@@ -23,12 +23,6 @@ do
     log_file=/Volumes/IDGenomics_NAS/COVID/daily_metadata/$current_date/logs/log.txt
     echo "$(date) : It is a new day! Time to get some metadata together" 2>> $err_file | tee -a $log_file
     echo "$(date) : metadata will be in /Volumes/IDGenomics_NAS/COVID/daily_metadata/$current_date/dripping_rock" 2>> $err_file | tee -a $log_file
-
-    # comparing runs to json files
-    ls /Volumes/NGS/Analysis/covidseq/UT*/covidseq_complete.txt | rev | cut -f 2 -d "/" | rev | \
-      parallel ls /Volumes/IDGenomics_NAS/COVID/daily_metadata/json/{}.json 2>&1 | \
-      grep "No such" | awk '{print $4}' | cut -d "/" -f 7  | cut -f 1 -d "." | \
-      parallel python /home/Bioinformatics/Dripping_Rock/bin/fasta_to_json.py {}
 
     # comparing automatically created json files with working json files
     jsons=($(ls /Volumes/IDGenomics_NAS/COVID/daily_metadata/json/UT*.json | grep -v "missing.json" | rev | cut -f 1 -d "/" | rev))
@@ -51,7 +45,6 @@ do
       echo "$(date) : It's Sunday, time to get a new tree" 2>> $err_file | tee -a $log_file
       nextflow run /home/Bioinformatics/Dripping_Rock -with-tower -resume --msa true
     fi
-
   fi
 
   # print a slight QC output that compares runs to the jsons
