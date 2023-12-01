@@ -2,7 +2,7 @@
 
 """
 Author: Tom Iverson
-Released: 2023-10-12
+Released: 2023-11-30
 Version: 1.0.0
 Description:
 This script merges and performs data cleaning on the two C. auris LIMS exports. Copies of the two LIMS export files must be in the same directory as the script to run.

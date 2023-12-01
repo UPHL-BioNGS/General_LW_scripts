@@ -109,14 +109,14 @@ bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
 
 ## merge_c_auris_LIMS_export_files.py
 
-This script is used to gather sample metadata from recent sequencing runs of C. auris and to extract any additional data required through WGS analysis report requests.
+This script is used to gather sample metadata from recent sequencing runs of C. auris and to extract any additional data required in C. auris WGS analysis requests.
 
 The C. auris LIMS export consists of two reports:
 
 1. ‘C_AURIS_Positive_Colony_Daily.csv’ which contains patient metadata for detection of colonization of Candida auris.
 2. ‘C_AURIS_Positive_Isolates_Daily.csv’ which contains patient metadata for confirmed C. auris isolates.
    
-Both reports are generated daily and found on the LABWARE server (smb://172.16.109.9) at ‘/Volumes/LABWARE/Shared_Files/PHT/C_AURIS_DAILY’ and must be copied to the location of the script.
+Both reports are generated daily and found on the LABWARE server (smb://172.16.109.9) at ‘/Volumes/LABWARE/Shared_Files/PHT/C_AURIS_DAILY’ and must be copied to the location/directory of the Python script (merge_c_auris_LIMS_export_files.py).
 
 This script:
 
@@ -133,3 +133,35 @@ python merge_c_auris_LIMS_export_files.py
 ```
 
 The resulting merged Excel file assists in gathering City/State data for each sequenced C. auris sample as well as gathering collection dates and specimen types.
+
+## healthcare_facility_of_origin_city.py
+
+This script is used to determine the 'Healthcare_Facility_of_origin' city that is associated with various C. auris samples. 
+
+The script expects the following two input files, which must be in the same location/directory as the 'healthcare_facility_of_origin_city.py' script. Currently they are located at /Volumes/IDGenomics_NAS/pulsenet_and_arln/investigations/C_auris/complete_UPHL_analysis/C_auris_LIMS_export.
+
+1. 'samples.txt': This file contains data about the C. auris samples that is gathered from the C. auris LIMS export. It must include the following headers:
+ARLN_Specimen_ID, Healthcare_facility_of_origin_name, Healthcare_facility_of_origin_state.
+2. 'C_auris_Healthcare_Facility_of_origin_name_city_state.txt': This file contains a list of healthcare facilities along with their corresponding cities and states. As additional cities are determined in future, they can be added to this file.
+
+This script:
+
+1. Uses pandas to read the input files and if there's an error in reading the files, it logs the error and exits the script.
+
+2. Merges the two dataframes on the Healthcare_facility_of_origin_name and Healthcare_facility_of_origin_state columns. If merging fails, it logs the error and exits.
+
+3. In cases where the city information is missing, it fills these gaps with 'NULL'.
+
+4. Writes the merged data to an Excel file (facility_city_output.xlsx). If there's an error during this process, the script logs this error.
+
+5. Uses the logging module for error logging, which helps in debugging and maintaining the script.
+
+6. The script uses the sys module for system-level operations like exiting the script upon encountering an error.
+
+```
+EXAMPLE:
+python healthcare_facility_of_origin_city.py
+```
+
+The resulting Excel file helps reduce time in determining what city the 'Healthcare_facility_of_origin_name' is located in.
+
