@@ -106,3 +106,13 @@ This script will enter ICA's Testing Project, upload nanopore and illumina reads
 EXAMPLE:
 bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
 ```
+## Dripping_Rock_R.R
+This R script is just to trigger the Dripping_Rock wf using the Linux/crontab.
+It can also be used to trigger the Driping_Rock wf manually from any point as: Rscript / . . . ./Dripping_Rock_R.R
+
+
+
+
+
+
+
