@@ -106,3 +106,135 @@ This script will enter ICA's Testing Project, upload nanopore and illumina reads
 EXAMPLE:
 bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
 ```
+
+## merge_c_auris_LIMS_export_files.py
+
+This script is used to gather sample metadata from recent sequencing runs of C. auris and to extract any additional data required in C. auris WGS analysis requests.
+
+The C. auris LIMS export consists of two reports:
+
+1. ‘C_AURIS_Positive_Colony_Daily.csv’ which contains patient metadata for detection of colonization of Candida auris.
+2. ‘C_AURIS_Positive_Isolates_Daily.csv’ which contains patient metadata for confirmed C. auris isolates.
+   
+Both reports are generated daily and found on the LABWARE server currently located at the path below and must be copied to the location/directory of the merge_c_auris_LIMS_export_files.py script.
+
+```
+PATH:
+(smb://172.16.109.9) at ‘/Volumes/LABWARE/Shared_Files/PHT/C_AURIS_DAILY’
+```
+
+This script:
+
+1. Uses the pandas library to read both CSV reports into dataframes.
+2. Opts out of redundant columns.
+3. Merges both reports.
+4. Exports the merged data into an Excel file.
+5. Creates a parent directory (C_auris_LIMS_export_*date*) for the saved Excel file.
+6. Deletes the copied C. auris LIMS csv reports
+   
+```
+EXAMPLE:
+python merge_c_auris_LIMS_export_files.py
+```
+
+The resulting merged Excel file assists in gathering City/State data for each sequenced C. auris sample as well as gathering collection dates and specimen types.
+
+## healthcare_facility_of_origin_city.py
+
+This script is used to determine the 'Healthcare_Facility_of_origin' city that is associated with various C. auris samples. 
+
+The script expects the following two input files, which must be in the same location/directory as the 'healthcare_facility_of_origin_city.py' script. Currently they are located at:
+
+```
+PATH:
+/Volumes/IDGenomics_NAS/pulsenet_and_arln/investigations/C_auris/complete_UPHL_analysis/C_auris_LIMS_export
+```
+
+1. 'samples.txt': This file contains data about the C. auris samples that is gathered from the C. auris LIMS export. It must include the following headers:
+ARLN_Specimen_ID, Healthcare_facility_of_origin_name, Healthcare_facility_of_origin_state.
+2. 'C_auris_Healthcare_Facility_of_origin_name_city_state.txt': This file contains a list of healthcare facilities along with their corresponding cities and states. As additional cities are determined in future, they will be added by the user who can find the city through Google search. Please note that if the city cannot be determined, then null should be used.
+
+This script:
+
+1. Uses pandas to read the input files and if there's an error in reading the files, it logs the error and exits the script.
+
+2. Merges the two dataframes on the Healthcare_facility_of_origin_name and Healthcare_facility_of_origin_state columns. If merging fails, it logs the error and exits.
+
+3. In cases where the city information is missing, it fills these gaps with 'NULL'.
+
+4. Writes the merged data to an Excel file (facility_city_output.xlsx). If there's an error during this process, the script logs this error.
+
+5. Uses the logging module for error logging, which helps in debugging and maintaining the script.
+
+6. The script uses the sys module for system-level operations like exiting the script upon encountering an error.
+
+```
+EXAMPLE:
+python healthcare_facility_of_origin_city.py
+```
+
+The resulting Excel file helps reduce time in determining what city the 'Healthcare_facility_of_origin_name' is located in.
+
+## gather_vcfs.sh
+
+This script aids the user in gathering sample VCF (Variant Call Format) files from mycoSNP result directories. It is designed to efficiently copy and organize .g.vcf.gz and .g.vcf.gz.tbi files for specific samples and runs, facilitating subsequent WGS analysis. Users must create an empty directory named 'vcf_files' and a file named 'samples.txt' in the same location as this script. The samples.txt should contain two tab-separated columns: the first being the sample IDs and the second the run IDs. Example format: 302****\tUT-M07101-2112**.
+
+This script:
+
+1. Copies VCF Files: The copy_files function is the core of the script. It searches for VCF files in two specific directories, copying them to 'vcf_files/' if they don't already exist there.
+
+2. Search Directories: Searches the following two directories for vcf files. 
+    Primary Directory: /Volumes/IDGenomics_NAS/fungal/{run_id}/
+    Secondary Directory: /Volumes/IDGenomics_NAS/fungal/mycosnp_vcfs_211208-230726 
+
+3. Error and Success Handling: Prints a message for each sample, indicating whether copying was successful or if it failed.
+
+4. Parallel Processing: Uses GNU Parallel to process multiple entries from samples.txt, enhancing efficiency.
+
+```
+EXAMPLE (Ensure that 'samples.txt' is correctly formatted and present in the same directory as the script as well as the 'vcf_files' directory for successful execution):
+bash gather_vcfs.sh
+```
+
+The script will populate the vcf_files directory with the desired VCF files. Each outcome (success or failure) is communicated to the user via terminal messages.
+
+This script streamlines the process of collecting and organizing necessary data for mycoSNP analysis. It significantly reduces manual data handling and potential errors.
+
+
+## changeseqids.py
+
+This script updates sequence identifiers in the 'vcf-to-fasta.fasta' file, which is an output file of mycoSNP. It ensures that sequence IDs in the 'vcf-to-fasta.fasta' file, used in creating a Newick file, align with the specific naming conventions set by the CDC's Mycotic Disease Branch. Users must place three specific files in the same directory as this script:
+
+1. seqid.txt: A user-created, tab-separated file with headers "current_seqid" and "alternate_seqid".
+
+```
+Example:
+current_seqid	alternate_seqid
+3437***_S24	UT-UPHL-CAU-2*_Houston_TX
+3437***_S25	UT-UPHL-CAU-3*_Houston_TX
+```
+
+2. original.fasta: A copy of the vcf-to-fasta.fasta file that needs ID alteration.
+
+3. corrected.fasta: An empty file where the script will write the modified data.
+
+The script:
+
+1. Dictionary Creation: Reads the seqid.txt file and constructs a dictionary mapping the current sequence IDs (current_seqid) to their corresponding alternate IDs (alternate_seqid).
+
+2. File Processing: Opens original.fasta for reading and corrected.fasta for writing.
+
+3. Sequence identifiers in original.fasta are replaced with alternate IDs from the dictionary, preserving the integrity of the FASTA file format.
+
+4. Output: The resulting corrected.fasta file contains the FASTA sequences with updated sequence identifiers. This file is suitable for generating a Newick file for phylogenetic analysis.
+
+```
+Example: Before running the script, ensure that 'seqid.txt', 'original.fasta', and 'corrected.fasta' are correctly prepared and located in the same directory as the script.
+python changeseqids.py
+```
+
+This script aids in the preparation of C. auris sequence data for phylogenetic analysis. It automates the often tedious and error-prone process of manually updating sequence identifiers via MEGA 11 (Molecular Evolutionary Genetics Analysis version 11).
+
+
+
+
