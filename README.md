@@ -152,7 +152,7 @@ PATH:
 
 1. 'samples.txt': This file contains data about the C. auris samples that is gathered from the C. auris LIMS export. It must include the following headers:
 ARLN_Specimen_ID, Healthcare_facility_of_origin_name, Healthcare_facility_of_origin_state.
-2. 'C_auris_Healthcare_Facility_of_origin_name_city_state.txt': This file contains a list of healthcare facilities along with their corresponding cities and states. As additional cities are determined in future, they can be added to this file.
+2. 'C_auris_Healthcare_Facility_of_origin_name_city_state.txt': This file contains a list of healthcare facilities along with their corresponding cities and states. As additional cities are determined in future, they will be added by the user who can find the city through Google search. Please note that if the city cannot be determined, then null should be used.
 
 This script:
 
