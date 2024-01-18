@@ -6,6 +6,9 @@
 # The 'samples.txt' file should contain 2 tab-seperated columns. The 1st being the sample ids and the 2nd the run ids. Example: 302****	UT-M07101-2112**
 # Example of use: bash gather_vcfs.sh
 
+# Filter out any empty lines from samples.txt and overwrite it
+grep . samples.txt > temp.txt && mv temp.txt samples.txt
+
 # Function to copy vcf files over from fungal directory
 copy_files() {
     sample_id="$1"
