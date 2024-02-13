@@ -63,6 +63,10 @@ def bs_out(bashCommand):
 client = WebClient(token=config.token)
 channel_id = config.channel_id
 
+# Clarity login info
+c_user=config.clarity_user
+c_password=config.clarity_password
+
 @log(my_logger=logger)
 def my_subprocess_run(*args, **kwargs):
     return subprocess.run(*args, **kwargs)
@@ -106,18 +110,21 @@ try:
                 experiments_done.append(line.strip())
 
         bssh_now=[]
-        tmp=bs_out('bs list --config=bioinfo runs')
-        for i in range(1,len(tmp)):
-            bssh_now.append(tmp[i].split()[2])
+        try:
+            tmp=bs_out('bs list --config=bioinfo runs')
+            for i in range(1,len(tmp)):
+                bssh_now.append(tmp[i].split()[2])
 
-        change=set(bssh_now) - set(experiments_done)
+            change=set(bssh_now) - set(experiments_done)
+        except:
+            change=[]
 
         logger.info(change)
 
         if len(change) > 0:
             for i in change:
                 try:
-                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
                                         # Parse the XML
                     root = ET.fromstring(xml)
 
@@ -128,7 +135,7 @@ try:
 
                     sample_lims_ids = []
                     for artifact_id in artifact_limsids:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
                         match = re.search(r'sample\s+limsid="([^"]+)"', xml)
                         if match:
                             sample_lims_ids.append(match.group(1))
@@ -136,7 +143,7 @@ try:
                     species=[]
                     for j in sample_lims_ids:
                         xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
-                                            auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                                            auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
                         # Parse the XML data
                         root = ET.fromstring(xml)
                                             
@@ -156,11 +163,37 @@ try:
                     logger.info(species)
                     if len(species) > 0:
                         species=set(species)
+                    if len(species) < 1:
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=Load%%20To%%20Reagent%%20Cartridge%%20(NextSeq%%201000/2000%%20Sequencing%%20v2.1)&udf.Run%%20Name=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+                        art_step_details = re.findall(r'limsid="([^"]+)"', xml)
+                        for j in art_step_details:
+                            xml_art_step_details=(requests.get("https://uphl-ngs.claritylims.com/api/v2/steps/%s/details" % j,
+                                        auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+                            art_step_details = re.findall(r'limsid="([^"]+)"', xml_art_step_details)[0]
+                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % art_step_details, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
+
+                        # Extract the limsid attribute
+                        sample_lims_ids= re.findall(r'limsid="([^"]+)"', xml)
+
+                        species=[]
+                        for j in sample_lims_ids:
+                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
+                                                auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+                            # Find the udf:field element with name="Species"
+                            species_match = re.search(r'<udf:field name="Species" type="String">([^<]+)</udf:field>', xml)
+
+                            # Extract the value of the udf:field element
+                            if species_match:
+                                species_value = species_match.group(1)
+                                species.append(species_value)
+                        logger.info(species)
+                        if len(species) > 0:
+                            species=set(species)
                 except ValueError as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
-                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
-                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (change,species))
+                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
+                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     elif len(species) < 1:
@@ -171,7 +204,7 @@ try:
                     del species
 
                 else:
-                    slack_message("New Sequecning Run Started: %s" %  change)
+                    slack_message("New Sequecning Run Started: %s" %  i)
                     open_screen_and_run_script('screen_run.py',i)
 
             with open('experiments_done.txt', 'w') as file:
