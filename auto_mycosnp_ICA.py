@@ -56,7 +56,7 @@ process = subprocess.Popen(bashCommand.split(" ",3), stdout=subprocess.PIPE)
 process.communicate()
 
 # Find and Link data on ICA related to run
-bashCommand = "icav2 projectdata list --parent-folder /datasets/"
+bashCommand = "icav2 projectdata list --parent-folder /ilmn-analyses/"
 tmp= icav_out(bashCommand)
 for i in range(len(tmp)):
     tmp[i]=tmp[i].split()[0]
@@ -65,28 +65,10 @@ folders=tmp
 
 experiments=[]
 for folder in folders:
-    bashCommand = "icav2 projectdata list --data-type FILE --parent-folder /datasets/%s/ --file-name bsshinput.json" % (folder)
-    tmp= icav_out(bashCommand)
-    download=tmp[0].split(' ')[3]
-
-    bashCommand = "icav2 projectdata download %s" % download
-    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-    process.communicate()
-
-    Experiment=json.load(open('./bsshinput.json'))['BsshRun']['ExperimentName']
-    experiments.append(Experiment)
-
-ica_target=list(i for i, e in enumerate(experiments) if e == run_name)
-
-if len(ica_target) > 1:
-    for i in ica_target:
-        bashCommand = "icav2 projectdata list --data-type FILE --parent-folder /datasets/%s/ --file-name bsshoutput.json" % (folders[i])
-        try:
-            tmp= icav_out(bashCommand)
-        except:
-            del ica_target[i]
-
-ica_target=folders[ica_target[0]]
+    if folder.startswith(run_name):
+        print("found Folder")
+        ica_target=folder
+print(ica_target)
 
 #Mycosnp needs a samplesheet, as input and must be uploaded into ICA
 try:
@@ -95,7 +77,7 @@ except:
     logger.info("Folder Already Exits")
 
 #The names of the samples, and there ICA ids must be downloaded from ICA
-bashCommand = "icav2 projectdata list  --parent-folder /datasets/" +  ica_target + "/output/fastqs/Samples/"
+bashCommand = "icav2 projectdata list  --parent-folder /ilmn-analyses/" +  ica_target + "/output/Samples/"
 logger.info(bashCommand)
 tmp= icav_out(bashCommand)
 logger.info(tmp)
@@ -105,7 +87,7 @@ for i in tmp:
 
 ica_names=[]
 for i in ica_lanes:
-    bashCommand = "icav2 projectdata list  --parent-folder  /datasets/" +  ica_target + "/output/fastqs/Samples/Lane_1/"
+    bashCommand = "icav2 projectdata list  --parent-folder  /ilmn-analyses/" +  ica_target + "/output/Samples/Lane_1/"
     tmp= icav_out(bashCommand)
     for j in tmp:
         if not "Undetermined" in j.split(" ")[0]:
@@ -114,7 +96,7 @@ logger.info(ica_names)
 ica_ids=[]
 sample_names=[]
 for i in ica_names:
-    bashCommand = 'icav2 projectdata list  --parent-folder /datasets/' +  ica_target + '/output/fastqs/Samples/Lane_1/' + i + '/'
+    bashCommand = 'icav2 projectdata list  --parent-folder /ilmn-analyses/' +  ica_target + '/output/Samples/Lane_1/' + i + '/'
     logger.info(bashCommand)
     tmp= icav_out(bashCommand)
     logger.info(tmp)
