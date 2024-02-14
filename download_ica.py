@@ -96,8 +96,8 @@ def ica_download(run_type):
                 break
             except:
                 pass
-        for i in ['Results/stats/*','Results/multiqc_report.html','Results/combined/*','Results/snpeff/*', 'Results/samples/*']:
-            bashCommand = "icav2 projectdata download /%s/%s /Volumes/IDGenomics_NAS/fungal/%s/" % (target_dir,i, run_name)
+        for i in ['/*']:
+            bashCommand = "icav2 projectdata download /%s%s /Volumes/IDGenomics_NAS/fungal/%s/" % (target_dir,i, run_name)
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             process.communicate()
     if run_type == 'grandeur':
@@ -115,7 +115,7 @@ def ica_download(run_type):
                 break
             except:
                 pass
-        for i in ['/grandeur/*']:
+        for i in ['/*']:
             bashCommand = "icav2 projectdata download /%s%s /Volumes/IDGenomics_NAS/pulsenet_and_arln/%s" % (target_dir,i, run_name)
             process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
             process.communicate()
