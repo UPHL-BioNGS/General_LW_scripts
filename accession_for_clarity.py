@@ -6,12 +6,10 @@
 # Install with: pip3 install pandas openpyxl xlrd
 
 """
-This is a modified version of accession_for_clarity.py, which strips out the search and retrivial of 
-samples tested at UPHL and found in the shared drives work books. This portion of the script often fails
-for unkown reasons and these samples are the least the we process we get a majority from IHC,ARUP, and U of U;
+This is a modified version of the orginal accession_for_clarity.py, which strips out the search and retrivial of 
+samples tested at UPHL and found in the shared drives work books. This portion of the script often failed
+for unknown reasons and these samples are the least the we process we get a majority from IHC,ARUP, and U of U;
 because of this I made this backup for that the majority of samples could make it into Clarity.
-
-ONLY USE IF MAIN SCRIPT IS NOT WORKING AND WARN THE LAB OF THIS.
 """
 
 import pandas as pd
