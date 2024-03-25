@@ -9,7 +9,8 @@
 This is a modified version of the orginal accession_for_clarity.py, which strips out the search and retrivial of 
 samples tested at UPHL and found in the shared drives work books. This portion of the script often failed
 for unknown reasons and these samples are the least the we process we get a majority from IHC,ARUP, and U of U;
-because of this I made this backup for that the majority of samples could make it into Clarity.
+because of this I made this backup for that the majority of samples could make it into Clarity. Please use the original script
+if trying to capture these samples in the future. This is unlikly as accessioning will be automated with LabWare 8 in the future.
 """
 
 import pandas as pd
