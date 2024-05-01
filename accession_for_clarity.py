@@ -5,6 +5,14 @@
 # Packages Needed pandas, openpyxl, xlrd
 # Install with: pip3 install pandas openpyxl xlrd
 
+"""
+This is a modified version of the orginal accession_for_clarity.py, which strips out the search and retrivial of 
+samples tested at UPHL and found in the shared drives work books. This portion of the script often failed
+for unknown reasons and these samples are the least the we process we get a majority from IHC,ARUP, and U of U;
+because of this I made this backup for that the majority of samples could make it into Clarity. Please use the original script
+if trying to capture these samples in the future. This is unlikly as accessioning will be automated with LabWare 8 in the future.
+"""
+
 import pandas as pd
 import os
 import sys
@@ -22,6 +30,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 ### USAGE ### python accession_for_clarity.py "path/to/files/fromclarity" "path/to/files/fromclarity.etc"
 # Must be log into or mount these servers smb://172.16.109.9 smb://168.180.220.43. Must include files, project samplesheets, from Clarity for all COVIDSEQ projects
 # DO NOT MAKE DUPLICATES IN CLARITY!!! PLEASE READ README.md and proceed with caution. 
+
 
 path_to_project_lists=[]
 for i in range(len(sys.argv)-1):
@@ -50,108 +59,6 @@ NGS_Covid['receivedDate']= pd.to_datetime(NGS_Covid['receivedDate']).dt.date
 NGS_Covid=NGS_Covid[(NGS_Covid['receivedDate'] > plot_start) & (NGS_Covid['receivedDate'] < plot_end)]
 NGS_Covid=NGS_Covid.drop(columns=['receivedDate'])
 
-# kfs by workbooks
-#ip address smb://172.16.109.9 smb://168.180.220.43
-list_of_files = glob.glob('/Volumes/DDCP/UPHL/MICRO/MOLECULAR LABORATORY/TESTING/2019-nCoV/ThermoFisher Kit/Worksheets/Completed Worksheets/*')
-these=[]
-date_regex = r"^\d{4}-\d{2}-\d{2}_.*\.xlsx?$"
-for i in list_of_files:
-    if re.match(date_regex, i.split('/')[-1]):
-        try:
-            if datetime.strptime(i.split('/')[-1][0:10], '%Y-%m-%d') > (datetime.today()-timedelta(days=30)):
-                these.append(i)
-        except:
-            print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
-            continue
-dels=[]
-for i in range(len(these)):
-    if these[i].split('/')[-1][0:15][-1] == 'R':
-        for j in range(len(these)):
-            if these[i].split('/')[-1][0:14] == these[j].split('/')[-1][0:14]:
-                if len(these[i].split('/')[-1]) > len(these[j].split('/')[-1]):
-                    dels.append(j)
-dels=list(set(dels))
-
-dels.sort(reverse=True)
-
-
-
-for i in dels:
-    del these[i]
-positives=[]
-for k in these:
-    try:
-        kf_plate=pd.read_excel(k,sheet_name='Export File', skiprows=9)
-    except:
-        print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
-        continue
-    kf_samples=[]
-    for i,j in kf_plate.iterrows():
-        if type(j['Sample Name']) == int:
-            kf_samples.append([j['Sample Name'],atog[j['Well']-1]])
-    pos=[]
-    for i in kf_samples:
-        tmp=ncovid[ncovid['sampleNumber']==i[0]]
-        if len(tmp) == 0:
-            print("STOP SAMPLES NOT IN NCOV FILE")
-            break
-        if tmp['result'].values[0] == 'Positive for SARS-CoV-2' or tmp['result'].values[0] == 'SARS-COV-2 Detected' :
-            i.append(tmp['collectionDate'].values[0])
-            i.append(k.split('/')[-1][0:-5])
-            positives.append(i)
-kfs = pd.DataFrame(positives, columns=['Sample Name','Well','collectionDate','Batch ID'])
-
-#kfs for comboflu
-list_of_files = glob.glob('/Volumes/DDCP/UPHL/MICRO/MOLECULAR LABORATORY/TESTING/2019-nCoV/FluAFluBCOVID/Worksheets/*')
-these=[]
-date_regex = r"^\d{4}-\d{2}-\d{2}_.*\.xlsx?$"
-for i in list_of_files:
-    if re.match(date_regex, i.split('/')[-1]):
-        try:
-            if datetime.strptime(i.split('/')[-1][0:10], '%Y-%m-%d') > (datetime.today()-timedelta(days=30)):
-                these.append(i)
-        except:
-            print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
-            continue
-dels=[]
-for i in range(len(these)):
-     if these[i].split('/')[-1][0:15][-1] == 'R':
-         for j in range(len(these)):
-             if these[i].split('/')[-1][0:14] == these[j].split('/')[-1][0:14]:
-                 if len(these[i].split('/')[-1]) > len(these[j].split('/')[-1]):
-                     dels.append(j)
-dels=list(set(dels))
-
-dels.sort(reverse=True)
-
-for i in dels:
-    del these[i]
-positives=[]
-for k in these:
- try:
-         kf_plate=pd.read_excel(k,sheet_name='Export File', skiprows=9)
- except:
-        print('\n \n \n Looks like you are not connected to /DDCP/UPHL/!!! \n \n \n \n Please connect to smb://172.16.109.9 smb://168.180.220.43 \n \n \n \n OR You do not have the imported moduels install for the version of python you are using. See line 6. \n\n\n\n\n\n')
-        continue
- kf_samples=[]
- for i,j in kf_plate.iterrows():
-         if type(j['Sample Name']) == int:
-             kf_samples.append([j['Sample Name'],atog[j['Well']-1]])
-pos=[]
-
-if kf_samples > 0 :
-    for i in kf_samples:
-        tmp=ncovid[ncovid['sampleNumber']==i[0]]
-        if len(tmp) == 0:
-            print("STOP SAMPLES NOT IN NCOV FILE")
-        break
-        if tmp['result'].values[0] == 'Detected' :
-            i.append(tmp['collectionDate'].values[0])
-            i.append(k.split('/')[-1][0:-5])
-            positives.append(i)
-    kfs2 = pd.DataFrame(positives, columns=['Sample Name','Well','collectionDate','Batch ID'])
-
-
 #Get Panther Tubes
 end = datetime.now().date()
 plot_end=end
@@ -172,20 +79,9 @@ tmp = NGS_Covid.rename(columns={'customer': 'UDF/Provider Code', 'sampleNumber':
 tmp = tmp.drop(columns= ['observations'])
 clarity = clarity.append(tmp, ignore_index=True)
 
-# Merge kfs in clarity
-tmp = kfs.rename(columns={'Sample Name':'Sample/Name','Well':'Sample/Well Location',
-                      'Batch ID':'Container/Name','collectionDate':'UDF/Sample Collection DateTime'})
-
-# Merge kfs2 in clarity
-if kf_samples > 0 :
-    tmp = kfs2.rename(columns={'Sample Name':'Sample/Name','Well':'Sample/Well Location',
-                            'Batch ID':'Container/Name','collectionDate':'UDF/Sample Collection DateTime'})
-    tmp['UDF/Provider Code'] = 'UPHL'
-    clarity = clarity.append(tmp, ignore_index=True)
-
 #tmp = tmp.drop(columns= ['ORF1ab Ct','N gene Ct','S gene Ct'])
-tmp['UDF/Provider Code'] = 'UPHL'
-clarity = clarity.append(tmp, ignore_index=True)
+#tmp['UDF/Provider Code'] = 'UPHL'
+#clarity = clarity.append(tmp, ignore_index=True)
 
 tmp=ppanther.rename(columns={'sampleNumber':'Sample/Name',
                       'collectionDate':'UDF/Sample Collection DateTime',
