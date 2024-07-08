@@ -3,10 +3,6 @@ The scripts that UPHL uses to download things from basespace and run respective 
 
 # USAGE
 
-## daily_SARS-CoV-2_metadata.sh
-
-daily_SARS-CoV-2_metadata.sh checks the date every 4 hours. If it is a new day, this script runs the Dripping Rock nextflow workflow to get the daily SARS-CoV-2 metadata file. On Sundays, it also takes the latest 20 runs and 10 random runs and creates a phylogenetic tree. This is a script that is run in a screen on the Production account.
-
 ## accession_for_clarity.py
 
 accession_for_clarity.py is a script that creates an accessioning file for Clarity that has the new samples found in the Labware lims system that will be ready for the lab to process. The output of the script is a csv file, that must be saved as an excel file before Clarity will accept it. To be able to run the script you must have these two servers mounted on your computer; smb://172.16.109.9 and smb://168.180.220.43 or //LABWARE/ and ///DDCP/UPHL/. You also need to log into Clarity and download all samplesheets from projects with a name that starts with COVIDSeq, including the project COVIDSeq_From_TEST_DO_NOT_PUT_IN_WORKFLOW. Do this by going to the 'Projects and Samples' tab, choosing the correct project, and clicking the modify samples button. This will insure we do not place duplicates in Clarity which causes many issues.
@@ -90,21 +86,6 @@ This script is written to download analysis files from ICA to the NAS. It takes 
 ```
 EXAMPLE:
 python download_ica.py UT-VH0770-220915 mycosnp
-```
-
-## long_read_seq/Unicycler_ICA.sh
-
-This script is to just run Unicycler on samples that have both Nanopore and Illumina reads. This script requires several things:
-1. That icav2 is configured for the user
-2. gnu parallel is installed and running
-3. That the user is currently in the directory of the nanopore run
-4. That the user has created a sample sheet file for Donut Falls
-
-This script will enter ICA's Testing Project, upload nanopore and illumina reads to a directory specified by the first position, and manage files found in the sample sheet in the second position. It will then (hopefully) start Unicycler on ICA after the files are finished uploading.
-
-```
-EXAMPLE:
-bash long_read_seq/Unicycler_ICA.sh UT-GXB02179-230317 sample_sheet.csv
 ```
 
 ## merge_c_auris_LIMS_export_files.py
@@ -236,5 +217,21 @@ python changeseqids.py
 This script aids in the preparation of C. auris sequence data for phylogenetic analysis. It automates the often tedious and error-prone process of manually updating sequence identifiers via MEGA 11 (Molecular Evolutionary Genetics Analysis version 11).
 
 
+## aws_sample_sheet_grandeur_creat.py
 
+This script will take a run_name, sample sheet, and directory of reads to create a sample sheet compatible with aws.
 
+```
+#example
+aws_samplesheet_grandeur_create.py -r UT-M03999-240627
+```
+
+Afterward, the idea is to just `cd` into the directory of the reads and upload everything to the AWS S3 bucket.
+
+```bash
+run=UT-M03999-240627
+directory=/Volumes/IDGenomics_NAS/pulsenet_and_arln/$run/reads
+cd $directory
+aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sample_sheet.csv s3://dhhs-uphl-omics-inputs-dev/$run/aws_sample_sheet.csv
+ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {} s3://dhhs-uphl-omics-inputs-dev/$run/{}
+```
