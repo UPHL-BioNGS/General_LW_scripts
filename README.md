@@ -217,7 +217,7 @@ python changeseqids.py
 This script aids in the preparation of C. auris sequence data for phylogenetic analysis. It automates the often tedious and error-prone process of manually updating sequence identifiers via MEGA 11 (Molecular Evolutionary Genetics Analysis version 11).
 
 
-## aws_sample_sheet_grandeur_creat.py
+## aws_sample_sheet_grandeur_create.py
 
 This script will take a run_name, sample sheet, and directory of reads to create a sample sheet compatible with aws.
 
