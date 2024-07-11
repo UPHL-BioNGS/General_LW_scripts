@@ -25,57 +25,35 @@ from read_miseq_sample_sheet import read_miseq_sample_sheet
 
 logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S')
 
-def sample_sheet_to_df(samplesheet):
-    logging.info(f"Getting samples from {samplesheet}")
-
-    if os.path.exists(samplesheet):
-        # get all the samples from the sample sheet into a pandas dataframe
-        df            = read_miseq_sample_sheet(samplesheet, "sample_id")
-        df['lims_id'] = df['Sample_ID'].str.replace(  '-UT.*','', regex=True)
-        df['wgs_id']  = df['Sample_Name'].str.replace('-UT.*','', regex=True)
-
-        return df
-    
-    else:
-        logging.fatal('Sample sheet could not be located! (Specify with -s)')
-        exit(1)
 
 def amrfinder_results(df, args):
-    amrfinder_dir = args.grandeur + '/ncbi-AMRFinderplus/'
-    
-    if not os.path.isdir(amrfinder_dir):
-        return df
-    
-    logging.info('Getting virulence and AMR genes from ' + amrfinder_dir)
-    dfs = []
-    for filename in os.listdir(amrfinder_dir):
-        if filename.endswith("_amrfinder_plus.txt"):
-            filepath = os.path.join(amrfinder_dir, filename)
-            ind_df = pd.read_csv(filepath)
-            if not ind_df.empty:
-                dfs.append(ind_df)
-
-    if dfs:
-        amrfinder_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
+    amrfinder_df = results_to_df(f"{args.grandeur}/ncbi-AMRFinderplus/", "\t", "_amrfinder_plus.txt")
 
     if not amrfinder_df.empty:
         amrfinder_df              = amrfinder_df.sort_values('Gene symbol')
 
         amr_df                    = amrfinder_df[amrfinder_df['Element type'] == 'AMR'].copy()
-        amr_df                    = amr_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: list(x)})
+        amr_df                    = amr_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: ', '.join(list(x))})
         amr_df['amr genes']       = amr_df['Gene symbol']
         df                        = pd.merge(df,amr_df[['Name','amr genes']],left_on='Sample_Name', right_on='Name', how='left')
         df                        = df.drop('Name', axis=1)
 
         vir_df                    = amrfinder_df[amrfinder_df['Element type'] == 'VIRULENCE'].copy()
-        vir_df                    = vir_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: list(x)})
+        vir_df                    = vir_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: ', '.join(list(x))})
         vir_df['virulence genes'] = vir_df['Gene symbol']
         df                        = pd.merge(df,vir_df[['Name','virulence genes']],left_on='Sample_Name', right_on='Name', how='left')
         df                        = df.drop('Name', axis=1)
     
     return df
+
+
+def blobtools_results(df, summary_df):
+    logging.info("Getting blobtools results")
+    df = pd.merge(df,summary_df[['sample','blobtools_organism_(per_mapped_reads)']],left_on='Sample_Name', right_on='sample', how='left')
+    df = df.drop('sample', axis=1)
+
+    return df
+
 
 def create_files(df):
     # columns for final files
@@ -87,7 +65,6 @@ def create_files(df):
     for col in finished_cols + arln_cols:
         if col not in df.columns:
             df[col] = None
-
 
     df = df.fillna('')
     df = df.sort_values('wgs_id')
@@ -104,54 +81,49 @@ def create_files(df):
 
 
 def emmtyper_results(df, args):
-    emmtyper_dir      = args.grandeur + '/emmtyper/'
-
-    if not os.path.isdir(emmtyper_dir):
-        return df
-
-    logging.info('Getting emmtyper information from ' + emmtyper_dir)
-
-    dfs = []
-
-    for filename in os.listdir(emmtyper_dir):
-        if filename.endswith("mlst.tsv"):
-            filepath = os.path.join(emmtyper_dir, filename)
-            ind_df = pd.read_table(filepath, sep="\t")
-            if not ind_df.empty:
-                dfs.append(ind_df)
-
-    if dfs:
-        emmtyper_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
+    emmtyper_df = results_to_df(f"{args.grandeur}/emmtyper/", "\t", "_emmtyper.txt")
 
     if not emmtyper_df.empty:
-        emmtyper_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST'].astype('str')
-        df              = pd.merge(df,emmtyper_df[['sample','mlst']],left_on='Sample_Name', right_on='sample', how='left')
-        df              = df.drop('sample', axis=1)
+        emmtyper_df['emm type'] = emmtyper_df['Predicted emm-type']
+        df = pd.merge(df,emmtyper_df[['sample','emm type']],left_on='Sample_Name', right_on='sample', how='left')
+        df = df.drop('sample', axis=1)
+
+    return df
+
+
+def escherichia_serotype(df, summary_df, args):
+    logging.info('Double checking Escherichia organism with shigatyper results')
+
+    # creating a copy of the summary_df to just the Escherichia samples
+    ecoli_df                              = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
+    ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
+    ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
+    ecoli_df['O_H']                       = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
+    ecoli_df['ecoli_organism']            = 'Escherichia coli'
+
+    # making sure the top Shigella organism makes it to the spreadsheet for each ipaH+ sample
+    if 'shigatyper_hit' in summary_df.columns and 'mash_organism' in summary_df.columns:
+        shigella_df = ecoli_df[ecoli_df['shigatyper_hit'].str.contains('ipaH')]
+        for sample in shigella_df['sample'].tolist():
+            organism = 'Escherichia coli'
+            with open(f"{args.grandeur}/mash/{sample}.summary.mash.csv") as file:
+                for line in file:
+                    line = line.strip()
+                    if 'Shigella' in line:
+                        organism = line.split(',')[-1].replace('_', ' ')
+                        break
+            ecoli_df.loc[ecoli_df['sample'] == sample, 'ecoli_organism'] = organism
+
+    ecoli_df['SerotypeFinder (E. coli)'] = ecoli_df['ecoli_organism'] + " " + ecoli_df['O_H']
+
+    df = pd.merge(df, ecoli_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
+    df = df.drop('sample', axis=1)
 
     return df
 
 
 def fastani_results(df, args):
-    fastani_dir   = args.grandeur + '/fastani/'
-    
-    if not os.path.isdir(fastani_dir):
-        return df
-    
-    logging.info('Getting the top organism from fastani at ' + fastani_dir)
-    dfs = []
-    for filename in os.listdir(fastani_dir):
-        if filename.endswith("_fastani.csv"):
-            filepath = os.path.join(fastani_dir, filename)
-            ind_df = pd.read_csv(filepath)
-            if not ind_df.empty:
-                dfs.append(ind_df)
-
-    if dfs:
-        fastani_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
+    fastani_df = results_to_df(f"{args.grandeur}/fastani/", ',', '_fastani.csv')
 
     # Getting the WGS organism from fastani or mash
     if not fastani_df.empty:
@@ -167,7 +139,7 @@ def fastani_results(df, args):
 
 
 def grandeur_summary(df, args):
-    summary       = args.grandeur + '/grandeur_summary.tsv'
+    summary = args.grandeur + '/grandeur_summary.tsv'
     logging.info('Extracting information from ' + summary)
 
     # using results in summary file instead of the "original"
@@ -183,26 +155,8 @@ def grandeur_summary(df, args):
     df['coverage'] = df['coverage'].fillna(0)
     df['coverage'] = df['coverage'].round(2)
 
-    # getting O and H groups
     if 'serotypefinder_Serotype_O' in summary_df.columns:
-        if 'shigatyper_Hit' in summary_df.columns and 'mash_organism' in summary_df.columns:
-            logging.info('Double checking E. coli organism with shigatyper results')
-            ecoli_df = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
-            ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
-            ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
-            ecoli_df['ecoli_organism'] = "Escherichia coli"
-            ecoli_df.loc[ecoli_df['shigatyper_Hit'].str.contains('ipaH', na=False), 'ecoli_organism'] = 'Shigella'
-            ecoli_df['SerotypeFinder (E. coli)'] = ecoli_df['ecoli_organism'] + " " + ecoli_df['serotypefinder_Serotype_O'] + ":" + ecoli_df['serotypefinder_Serotype_H']
-
-            df = pd.merge(df,ecoli_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
-            df = df.drop('sample', axis=1)
-        else:
-            summary_df['SerotypeFinder (E. coli)'] = summary_df['serotypefinder_Serotype_O'].apply(str) + ':' + summary_df['serotypefinder_Serotype_H'].apply(str)
-            
-            df = pd.merge(df,summary_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
-            df = df.drop('sample', axis=1)
-    else:
-        df['SerotypeFinder (E. coli)'] = ''
+        df = escherichia_serotype(df, summary_df, args)
 
     if 'kraken2_organism_(per_fragment)' in summary_df.columns:
         df = kraken2_results(df, summary_df)
@@ -212,26 +166,17 @@ def grandeur_summary(df, args):
 
     return df
 
+
+def kraken2_results(df, summary_df):
+    logging.info("Getting kraken2 results")
+    df = pd.merge(df,summary_df[['sample','kraken2_organism_(per_fragment)']],left_on='Sample_Name', right_on='sample', how='left')
+    df = df.drop('sample', axis=1)
+
+    return df
+
+
 def mash_results(df, args):
-    mash_dir      = args.grandeur + '/mash/'
-        
-    if not os.path.isdir(mash_dir):
-        return df
-    
-    logging.info('Getting the top organism from mash at ' + mash_dir)
-
-    dfs = []
-    for filename in os.listdir(mash_dir):
-        if filename.endswith("summary.mash.csv"):
-            filepath = os.path.join(mash_dir, filename)
-            ind_df = pd.read_csv(filepath)
-            if not ind_df.empty:
-                dfs.append(ind_df)
-
-    if dfs:
-        mash_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
+    mash_df = results_to_df(f"{args.grandeur}/mash/", ",", "summary.mash.csv")
 
     if not mash_df.empty:
         mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
@@ -249,26 +194,9 @@ def mash_results(df, args):
 
     return df
 
+
 def mlst_results(df, args):
-    mlst_dir      = args.grandeur + '/mlst/'
-        
-    if not os.path.isdir(mlst_dir):
-        return df
-    
-    logging.info('Getting MLST information from ' + mlst_dir)
-
-    dfs = []
-    for filename in os.listdir(mlst_dir):
-        if filename.endswith("mlst.tsv"):
-            filepath = os.path.join(mlst_dir, filename)
-            ind_df = pd.read_table(filepath, sep="\t")
-            if not ind_df.empty:
-                dfs.append(ind_df)
-
-    if dfs:
-        mlst_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
+    mlst_df = results_to_df(f"{args.grandeur}/mlst/", "\t", "mlst.tsv")
 
     if not mlst_df.empty:
         mlst_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST'].astype('str')
@@ -276,6 +204,78 @@ def mlst_results(df, args):
         df              = df.drop('sample', axis=1)
 
     return df
+
+
+def pass_fail(df):
+    df['Pass'] = 'TBD'
+    df.loc[df['coverage'] >= 40, 'Pass'] = 'Y'
+    df.loc[df['coverage'] < 20,  'Pass'] = 'X'
+
+    organisms = [
+        'Acinetobacter',
+        'Citrobacter',
+        'Elizabethkingia',
+        'Enterobacter',
+        'Escherichia',
+        'Klebsiella',
+        'Listeria',
+        'Neisseria',
+        'Providencia',
+        'Pseudomonas',
+        'Ralstonia',
+        'Serratia',
+        'Shigella', 
+        'Streptococcus' ]
+
+    for organism in organisms:
+        df.loc[(df['organism'].str.contains(organism, na=False))    & (df['coverage'] >= 40), 'Pass'] = 'Y'
+        df.loc[(df['organism'].str.contains(organism, na=False))    & (df['coverage'] <  40), 'Pass'] = 'X'
+
+    df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] >= 30), 'Pass'] = 'Y'
+    df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] <  30), 'Pass'] = 'X'
+    df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] >= 20), 'Pass'] = 'Y'
+    df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] <  20), 'Pass'] = 'X'
+
+    df             = df.sort_values('wgs_id')
+    df['organism'] = df['organism'].str.replace('_',' ',regex=False)
+
+    return df
+
+
+def results_to_df(path, delim, end):
+    if not os.path.isdir(path):
+        return pd.DataFrame()
+    
+    logging.info(f"Getting information from {path}")
+
+    dfs = []
+    for filename in os.listdir(path):
+        if filename.endswith(end):
+            filepath = os.path.join(path, filename)
+            ind_df = pd.read_table(filepath, sep=delim)
+            if not ind_df.empty:
+                dfs.append(ind_df)
+
+    if dfs:
+        return pd.concat(dfs, ignore_index=True)
+    else:
+        return pd.DataFrame() 
+
+
+def sample_sheet_to_df(samplesheet):
+    logging.info(f"Getting samples from {samplesheet}")
+
+    if os.path.exists(samplesheet):
+        # get all the samples from the sample sheet into a pandas dataframe
+        df            = read_miseq_sample_sheet(samplesheet, "sample_id")
+        df['lims_id'] = df['Sample_ID'].str.replace(  '-UT.*','', regex=True)
+        df['wgs_id']  = df['Sample_Name'].str.replace('-UT.*','', regex=True)
+
+        return df
+    
+    else:
+        logging.fatal('Sample sheet could not be located! (Specify with -s)')
+        exit(1)
 
 
 def seqsero2_results(df, args):
@@ -308,38 +308,6 @@ def seqsero2_results(df, args):
 
     return df
 
-def kraken2_results(df, summary_df):
-    logging.info("Getting kraken2 results")
-    df = pd.merge(df,summary_df[['sample','kraken2_organism_(per_fragment)']],left_on='Sample_Name', right_on='sample', how='left')
-    df = df.drop('sample', axis=1)
-
-    return df
-
-def blobtools_results(df, summary_df):
-    logging.info("Getting blobtools results")
-    df = pd.merge(df,summary_df[['sample','blobtools_organism_(per_mapped_reads)']],left_on='Sample_Name', right_on='sample', how='left')
-    df = df.drop('sample', axis=1)
-
-    return df
-
-def pass_fail(df):
-    df['Pass'] = 'TBD'
-    df.loc[df['coverage'] >= 40, 'Pass'] = 'Y'
-    df.loc[df['coverage'] < 20,  'Pass'] = 'X'
-    df.loc[(df['organism'].str.contains('Shigella', na=False))      & (df['coverage'] >= 40), 'Pass'] = 'Y'
-    df.loc[(df['organism'].str.contains('Shigella', na=False))      & (df['coverage'] <  40), 'Pass'] = 'X'
-    df.loc[(df['organism'].str.contains('Escherichia', na=False))   & (df['coverage'] >= 40), 'Pass'] = 'Y'
-    df.loc[(df['organism'].str.contains('Escherichia', na=False))   & (df['coverage'] <  40), 'Pass'] = 'X'
-    df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] >= 30), 'Pass'] = 'Y'
-    df.loc[(df['organism'].str.contains('Salmonella', na=False))    & (df['coverage'] <  30), 'Pass'] = 'X'
-    df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] >= 20), 'Pass'] = 'Y'
-    df.loc[(df['organism'].str.contains('Campylobacter', na=False)) & (df['coverage'] <  20), 'Pass'] = 'X'
-
-    df             = df.sort_values('wgs_id')
-    df['organism'] = df['organism'].str.replace('_',' ',regex=False)
-
-    return df
-
 def main():
     version = '0.1.24191'
 
@@ -351,21 +319,23 @@ def main():
 
     df = sample_sheet_to_df(args.samplesheet)
 
-    df = grandeur_summary(df, args)
+    df = grandeur_summary(  df, args)
 
-    df = fastani_results(df, args)
+    df = fastani_results(   df, args)
 
-    df = mash_results(df, args)
+    df = mash_results(      df, args)
 
-    df = seqsero2_results(df, args)
+    df = seqsero2_results(  df, args)
 
-    df = mlst_results(df, args)
+    df = mlst_results(      df, args)
 
-    df = emmtyper_results(df, args)
+    df = emmtyper_results(  df, args)
 
-    df = pass_fail(df)
+    df = amrfinder_results( df, args)
 
-    create_files(df)
+    df = pass_fail(         df)
+
+    create_files(           df)
 
 
 if __name__ == "__main__":
