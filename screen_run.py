@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+"""
+Author: John Arnn
+Released: 1997-04-05
+Version: 1.2.0
+Description:
+    This script is for downloading reads from basespace and starting analysis.
+
+EXAMPLE:
+    python3 screen_run.py -r UT-M70330-240131 --grandeur
+"""
+
+import argparse
 import sys
 import subprocess
 import re
@@ -14,6 +26,12 @@ from typing import Union
 import functools
 import logging
 
+# local functions
+from bssh_reads_by_run import bs_out, download_reads
+from bssh_sample_sheet import download_sample_sheet
+from aws_samplesheet_grandeur_create import grandeur_sample_sheet
+
+# setting up logging
 logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
@@ -41,40 +59,77 @@ def log(_func=None, *, my_logger):
         return decorator_log
     else:
         return decorator_log(_func)
-    
+
+
 @log(my_logger=logger)
 def my_subprocess_run(*args, **kwargs):
+    """
+    Runs a command in the shell.
+    
+    Args:
+        args/kwargs (argparse.Namespace): Parsed command-line arguments.
+
+    """
     return subprocess.run(*args, **kwargs)
 
-run_name = str(sys.argv[1])
-try:
-    run_type = str(sys.argv[2])
-except:
-    run_type = None
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
+def check_bs(run_name, time_interval = 1200 ):
+    """
+    Checks bssh for run completeness
 
-# Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
-@log(my_logger=logger)
-def bs_out(bashCommand):
-    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    tmp=output.decode("utf-8")
-    tmp=tmp.split('\n')
-    tmp.pop(0)
-    tmp.pop(1)
-    tmp.pop(-1)
-    tmp.pop(-1)
-    tmp=[x.replace('|', '') for x in tmp]
-    tmp=[re.sub(r"\s+", ' ', x) for x in tmp]
-    return tmp
+    Args:
+        run_name (str): run name
+        time_interval (int): second to wait before checking again
+    
+    Returns:
+        idd (str): Run id on bssh
+
+    """
+    t=0
+    while t == 0:
+        bash_command='bs list --config=bioinfo runs'
+        
+        df = bs_out(bash_command)
+
+        if run_name in df['ExperimentName'].values:
+            status = df.loc[df['ExperimentName'] == run_name,'Status'].iloc[0]
+            idd = df.loc[df['ExperimentName'] == run_name,'Id'].iloc[0]
+            if status == 'Complete':
+                t = 1
+                slack_message(f"{run_name} is \"Complete\" on BSSH")
+                logger.info(f"{run_name} is \"Complete\" on BSSH")
+                break
+            elif status == 'Failed' or status == 'Stopped' or status == 'Needs Attention' or status =='Timed Out':
+                slack_message(f"{run_name} has \"Failed\" or was unable to complete on BSSH; Script is aborting, check BSSH for more information")
+                logger.info(f"{run_name} has \"Failed\" or was unable to complete on BSSH; Script is aborting, check BSSH for more information {datetime.now()}")
+                sys.exit(0)
+            else:
+                logging.info(f"{run_name} has a {status} status")    
+        else:
+            logging.info(f"{run_name} not found in bssh yet!")
+
+        if t == 0:
+            time.sleep(time_interval)
+
+    logging.info(f"{run_name} id is {idd}")    
+    return idd
 
 # Slack_sdk values needed for sending messages to Slack. Uses an API already set up on the Slack website for the UPHL Workspace to post messages on the notifications channel.
 # Function makes sending Slack messages as easy as using the print funcition.
-client = WebClient(token=config.token)
-channel_id = config.channel_id
 @log(my_logger=logger)
 def slack_message(string):
+    """
+    Sends a message to slack.
+    
+    Args:
+        string (str): Slack message.
+
+    """
+
+    config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
+
+    client = WebClient(token=config.token)
+    channel_id = config.channel_id
     try:
 
         result = client.chat_postMessage(
@@ -85,49 +140,44 @@ def slack_message(string):
     except:
         logger.info("Slack Error")
 
-# These are the config files that are on the production account
-configurations=["bioinfo"]
 
-# This While loops Uses the BaseSpace CLI tool to monitor the progress of the run
-t=0
-while t==0:
-    for i in configurations:
-        bashCommand='bs list --config=%s runs' % i
-        tmp=bs_out(bashCommand)
-        tmp=pd.DataFrame(index=[row.split()[2] for row in tmp[1:]], columns=tmp[0].split()[1:], data=[row.split()[1:4] for row in tmp[1:]])
-        try:
-            if tmp.at[run_name,'Status']=='Complete':
-                user=i
-                idd=tmp.at[run_name,'Id']
-                slack_message('%s is "Complete" on BSSH' % run_name)
-                logger.info('%s is "Complete" on BSSH' % run_name)
-                t=1
-                break
-        except:
-            continue
+def main():
+    """
+    Waits for run to finish in BSSH.
 
-        try:
-            if tmp.at[args.run_name,'Status']=='Failed' or tmp.at[args.run_name,'Status']=='Stopped' or tmp.at[run_name,'Status']=='Needs Attention' or tmp.at[run_name,'Status']=='Timed Out':
-                user=i
-                idd=tmp.at[args.run_name,'Id']
-                slack_message('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % run_name)
-                logger.info('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information %s' % (run_name,datetime.now()))
-                sys.exit()
-        except:
-            continue
-    if t==0:
-        time.sleep(1200)
+    Once complete, downloads the sample sheet and fastq files into local storage.
+    
+    Args:
+        args (argparse.Namespace): Parsed command-line arguments.
 
-if run_type:
-    logger.info("Running download_reads.py")
-    my_subprocess_run(['python3','download_reads.py', run_name, run_type])
-    logger.info("Running auto_%s_ICA.py" % run_type)
-    my_subprocess_run(['python3','auto_%s_ICA.py' % run_type ,run_name])
-    if run_type == 'grandeur':
-        project = 'Produciton'
-    if run_type == 'mycosnp':
-        project = 'Testing'
-    logger.info("Running moniter_ica.py")
-    my_subprocess_run(['python3','moniter_ica.py', run_name, project, run_type])
+    """
 
-my_subprocess_run(["screen", "-S", "%s" % run_name, "-X", "quit"])
+    parser = argparse.ArgumentParser(description="Description of your script")
+    
+    # Define your arguments here
+    parser.add_argument('-r', '--run', type=str, required=True, help="Run name")
+    parser.add_argument('-o', '--out', type=str, required=False, default="reads", help="Directory where sample sheet will be downloaded to")
+    parser.add_argument('-g', '--grandeur', action='store_true', default = False, help = 'Flags run for Grandeur')
+    parser.add_argument('-m', '--mycosnp', action='store_true', default = False, help = 'Flags run for MycoSnp')
+    
+    # Parse the arguments
+    args = parser.parse_args()
+
+    idd = check_bs(args.run)
+
+    path = ''
+    if args.grandeur:
+        path = f"/Volumes/IDGenomics_NAS/pulsenet_and_arln/{args.run}/reads"
+    elif args.mycosnp:
+        path = f"/Volumes/IDGenomics_NAS/fungal/{args.run}/Sequencing_reads/Raw"
+
+    download_reads(args.run, path)
+    download_sample_sheet(args.run, path)
+
+    if args.grandeur:
+        grandeur_sample_sheet(args.run, f"{path}/SampleSheet.csv", path)
+    
+    my_subprocess_run(["screen", "-S", args.run, "-X", "quit"])
+
+if __name__ == "__main__":
+    main()
