@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+"""
+Author: Erin Young
+Released: 2024-07-11
+Version: 0.0.1
+Description:
+    This script should create a sample sheet for aws usage for grandeur.
+
+EXAMPLE:
+    python3 aws_samplesheet_grandeur_create.py -r UT-M70330-240131 -s SampleSheet.csv -d reads
+"""
+
 import pandas as pd
 import os
 import sys
@@ -8,7 +19,21 @@ import logging
 import glob
 from pathlib import Path
 
+# local
+from samplesheet_to_df import read_miseq_sample_sheet
+
 def find_files(sample_name, directory):
+    """
+    Find fastq files for a sample in a directory.
+
+    Args:
+        sample_name (str): sample name
+        directory (str): directory where paired-end fastq files should be
+
+    Returns:
+        files (list): List of matching fastq files.
+    """
+    
     files = list(Path(directory).glob(f"{sample_name}*fastq.gz"))
     if len(files) >=2:
         # Return the first two files, and there should only be two matches
@@ -17,34 +42,47 @@ def find_files(sample_name, directory):
     else:
         logging.debug(f"Two files not found: {files}")
 
-def find_header_line(file_path):
-    with open(file_path, 'r') as file:
-        for line_number, line in enumerate(file):
-            if "sample_id" in line.lower():
-                logging.debug(f"The line number in {file_path} was {line_number}")
-                return line_number
-    raise ValueError("Header line not found in file")
+def upload_sample_sheet_instructions(run_name, directory):
+    """
+    Instruction for uploading the sample sheet
+    (holding place for actual uploading)
 
-def read_miseq_sample_sheet(sample_sheet):
-    # Find the number of lines to skip because it's sometimes variable
-    lines_to_skip = find_header_line(sample_sheet)
-    
-    # Read the CSV file into a DataFrame, skipping the appropriate number of lines
-    df = pd.read_csv(sample_sheet, skiprows=lines_to_skip)
-    return df
+    Args:
+        run_name (str): run directory to upload to
+        directory (str): where the sample sheet is located
 
-def upload_sample_sheet_instructions(run, directory):
+    """
     logging.info("To get sample sheet to S3 bucket:")
-    logging.info(f"cd {directory} && aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sample_sheet.csv s3://dhhs-uphl-omics-inputs-dev/{run}/aws_sample_sheet.csv")
+    logging.info(f"cd {directory} && aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sample_sheet.csv s3://dhhs-uphl-omics-inputs-dev/{run_name}/aws_sample_sheet.csv")
 
-def upload_reads_instructions(run, directory):
+def upload_reads_instructions(run_name, directory):
+    """
+    Instruction for uploading fastq files.
+    (holding place for actual uploading)
+
+    Args:
+        run_name (str): run directory to upload to
+        directory (str): where the files are located
+
+    """
+
     logging.info("To get reads to S3 bucket:")
-    logging.info(f"cd {directory} &&  ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {{}} s3://dhhs-uphl-omics-inputs-dev/{run}/{{}}")
+    logging.info(f"cd {directory} &&  ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {{}} s3://dhhs-uphl-omics-inputs-dev/{run_name}/{{}}")
 
-def grandeur_sample_sheet(run, sample_sheet, directory):
+
+def grandeur_sample_sheet(run_name, sample_sheet, directory):
+    """
+    Takes fastq file names and adds predicted paths for aws.
+
+    Args:
+        run_name (str): directory destination in aws (most commonly the run name)
+        sample_sheet (str): sample sheet used to generate the fastq files
+        directory (str): directory that fastq files are located in
+
+    """
 
     # S3 input directory
-    final_dir=f"s3://dhhs-uphl-omics-inputs-dev/{run}/"
+    final_dir=f"s3://dhhs-uphl-omics-inputs-dev/{run_name}/"
 
     # turn MiSeq sample sheet into pandas df
     df = read_miseq_sample_sheet(sample_sheet)
@@ -59,16 +97,26 @@ def grandeur_sample_sheet(run, sample_sheet, directory):
         # sometimes there are no reads
         if reads:
             sample_files.append({'sample': sample_name, 'fastq_1': final_dir + reads[0].name, 'fastq_2': final_dir + reads[1].name})
+        else:
+            logging.debug(f"No fastq files were found for {sample_name}")
 
     # creating the final dataframe
     sample_file_df = pd.DataFrame(sample_files, columns=['sample', 'fastq_1', 'fastq_2'])
     sample_file_df = sample_file_df.sort_values(by='sample')
     sample_file_df.to_csv(directory + "aws_sample_sheet.csv", index=False)
+
     logging.info("DataFrame saved to aws_sample_sheet.csv.")
-    upload_sample_sheet_instructions(run, directory)
-    upload_reads_instructions(run, directory)
+    upload_sample_sheet_instructions(run_name, directory)
+    upload_reads_instructions(run_name, directory)
 
 def main():
+    """
+    Creates an AWS-friendly sample sheet.
+
+    Args:
+        args (argparse.Namespace): Parsed command-line arguments.
+    """
+
     logging.basicConfig(level=logging.INFO) 
 
     parser = argparse.ArgumentParser()
@@ -88,14 +136,8 @@ def main():
         help = 'directory with fastq files')
     args = parser.parse_args()
 
-    # getting the sample sheet from some default locations
-    if args.samplesheet is None or args.samplesheet.strip() == "":
-        sample_sheet = f"/Volumes/IDGenomics_NAS/pulsenet_and_arln/{args.run}/reads/SampleSheet.csv"
-    else:
-        sample_sheet = args.samplesheet
-
-    if not os.path.exists(sample_sheet):
-        logging.fatal(f"Sample sheet {sample_sheet} does not exist!")
+    if not os.path.exists(args.sample_sheet):
+        logging.fatal(f"Sample sheet {args.sample_sheet} does not exist!")
         sys.exit()
 
     # getting the directory of fastq files from some default locations
@@ -108,7 +150,7 @@ def main():
         logging.fatal(f"Directory {dir} does not exist!")
         sys.exit()
 
-    grandeur_sample_sheet(args.run, sample_sheet, dir)
+    grandeur_sample_sheet(args.run, args.sample_sheet, dir)
 
 if __name__ == "__main__":
     main()
