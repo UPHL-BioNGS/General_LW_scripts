@@ -36,7 +36,7 @@ def find_header_line(file_path, header_signal='sample_id'):
             if header_signal in line.lower():
                 logging.debug(f"The line number in {file_path} was {line_number}")
                 return line_number
-    raise ValueError("Header line not found in file")
+    raise ValueError('Header line not found in file')
 
 def read_miseq_sample_sheet(sample_sheet, header_signal='sample_id'):
     """
@@ -59,11 +59,11 @@ def main():
     """
     logging.basicConfig(level=logging.INFO) 
     
-    parser = argparse.ArgumentParser(description="Converts Sample Sheet into a pandas dataframe")
+    parser = argparse.ArgumentParser(description='Converts Sample Sheet into a pandas dataframe')
 
-    parser.add_argument("-s", "--sample_sheet", type=str, required=True, help="Path to the sample sheet file.")
-    parser.add_argument("-d", "--header", type=str, required=False, default='sample_id', help="String found in the header line.")
-    parser.add_argument("-o", "--out", type=str, required=False, default='sample_sheet.csv', help="Output file path.")
+    parser.add_argument('-s', '--sample_sheet', type=str, required=True, help='Path to the sample sheet file.')
+    parser.add_argument('-d', '--header', type=str, required=False, default='sample_id', help='String found in the header line.')
+    parser.add_argument('-o', '--out', type=str, required=False, default='sample_sheet.csv', help='Output file path.')
 
     args = parser.parse_args()
     
@@ -73,5 +73,5 @@ def main():
     df = read_miseq_sample_sheet(args.sample_sheet, args.header)
     df.to_csv(args.out, index=False)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
