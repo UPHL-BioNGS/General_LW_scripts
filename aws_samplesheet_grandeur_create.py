@@ -72,13 +72,13 @@ def upload_reads_instructions(run_name, directory):
     logging.info(f"cd {directory} &&  ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {{}} s3://dhhs-uphl-omics-inputs-dev/{run_name}/{{}}")
 
 
-def grandeur_sample_sheet(run_name, sample_sheet, directory):
+def grandeur_sample_sheet(run_name, samplesheet, directory):
     """
     Takes fastq file names and adds predicted paths for aws.
 
     Args:
         run_name (str): directory destination in aws (most commonly the run name)
-        sample_sheet (str): sample sheet used to generate the fastq files
+        samplesheet (str): sample sheet used to generate the fastq files
         directory (str): directory that fastq files are located in
 
     """
@@ -87,7 +87,7 @@ def grandeur_sample_sheet(run_name, sample_sheet, directory):
     final_dir=f"s3://dhhs-uphl-omics-inputs-dev/{run_name}/"
 
     # turn MiSeq sample sheet into pandas df
-    df = read_miseq_sample_sheet(sample_sheet)
+    df = read_miseq_sample_sheet(samplesheet)
 
     # file location for aws
     sample_files = []
@@ -105,7 +105,7 @@ def grandeur_sample_sheet(run_name, sample_sheet, directory):
     # creating the final dataframe
     sample_file_df = pd.DataFrame(sample_files, columns=['sample', 'fastq_1', 'fastq_2'])
     sample_file_df = sample_file_df.sort_values(by='sample')
-    sample_file_df.to_csv(directory + "aws_sample_sheet.csv", index=False)
+    sample_file_df.to_csv(f"{directory}/aws_sample_sheet.csv", index=False)
 
     logging.info("DataFrame saved to aws_sample_sheet.csv.")
     upload_sample_sheet_instructions(run_name, directory)
@@ -139,15 +139,15 @@ def main():
         help = 'directory with fastq files')
     args = parser.parse_args()
 
-    if not os.path.exists(args.sample_sheet):
-        logging.fatal(f"Sample sheet {args.sample_sheet} does not exist!")
+    if not os.path.exists(args.samplesheet):
+        logging.fatal(f"Sample sheet {args.samplesheet} does not exist!")
         sys.exit()
 
     if not os.path.exists(args.dir):
         logging.fatal(f"Directory {args.dir} does not exist!")
         sys.exit()
 
-    grandeur_sample_sheet(args.run, args.sample_sheet, args.dir)
+    grandeur_sample_sheet(args.run, args.samplesheet, args.dir)
 
 if __name__ == "__main__":
     main()
