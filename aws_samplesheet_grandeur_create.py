@@ -11,19 +11,21 @@ EXAMPLE:
     python3 aws_samplesheet_grandeur_create.py -r UT-M70330-240131 -s SampleSheet.csv -d reads
 """
 
+
 import pandas as pd
 import os
 import sys
 import argparse
 import logging
-import glob
 from pathlib import Path
 
 # local
 from samplesheet_to_df import read_miseq_sample_sheet
 
+
 def find_files(sample_name, directory):
     """
+
     Find fastq files for a sample in a directory.
 
     Args:
@@ -32,6 +34,7 @@ def find_files(sample_name, directory):
 
     Returns:
         files (list): List of matching fastq files.
+
     """
     
     files = list(Path(directory).glob(f"{sample_name}*fastq.gz"))
@@ -45,6 +48,7 @@ def find_files(sample_name, directory):
 
 def upload_sample_sheet_instructions(run_name, directory):
     """
+
     Instruction for uploading the sample sheet
     (holding place for actual uploading)
 
@@ -59,6 +63,7 @@ def upload_sample_sheet_instructions(run_name, directory):
 
 def upload_reads_instructions(run_name, directory):
     """
+
     Instruction for uploading fastq files.
     (holding place for actual uploading)
 
@@ -74,6 +79,7 @@ def upload_reads_instructions(run_name, directory):
 
 def grandeur_sample_sheet(run_name, samplesheet, directory):
     """
+
     Takes fastq file names and adds predicted paths for aws.
 
     Args:
@@ -114,10 +120,12 @@ def grandeur_sample_sheet(run_name, samplesheet, directory):
 
 def main():
     """
+
     Creates an AWS-friendly sample sheet.
 
     Args:
         args (argparse.Namespace): Parsed command-line arguments.
+    
     """
 
     logging.basicConfig(level=logging.INFO) 
