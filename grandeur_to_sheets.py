@@ -9,8 +9,10 @@ This script will collect needed files to get results from Grandeur for
 1. The 'Finished' tab (will be discontinued in the future)
 2. As a lookup table for the 'ARLN' tab
 
+It's really meant to be copied and pasted into corresponding google sheets.
+
 EXAMPLE:
-python3 grandeur_aws_to_sheets.py -g <path to grandeur results> -s <input sample sheet>
+python3 grandeur_to_sheets.py -g <path to grandeur results> -s <input sample sheet>
 '''
 
 # trying to keep dependencies really low
@@ -23,21 +25,36 @@ import glob
 # local files
 from read_miseq_sample_sheet import read_miseq_sample_sheet
 
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S')
+
 
 
 def amrfinder_results(df, args):
+    """
+
+    Parses amrfinder output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     amrfinder_df = results_to_df(f"{args.grandeur}/ncbi-AMRFinderplus/", "\t", "_amrfinder_plus.txt")
 
     if not amrfinder_df.empty:
         amrfinder_df              = amrfinder_df.sort_values('Gene symbol')
 
+        # amr results
         amr_df                    = amrfinder_df[amrfinder_df['Element type'] == 'AMR'].copy()
         amr_df                    = amr_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: ', '.join(list(x))})
         amr_df['amr genes']       = amr_df['Gene symbol']
         df                        = pd.merge(df,amr_df[['Name','amr genes']],left_on='Sample_Name', right_on='Name', how='left')
         df                        = df.drop('Name', axis=1)
 
+        # virulence results
         vir_df                    = amrfinder_df[amrfinder_df['Element type'] == 'VIRULENCE'].copy()
         vir_df                    = vir_df.groupby('Name', as_index=False).agg({'Gene symbol': lambda x: ', '.join(list(x))})
         vir_df['virulence genes'] = vir_df['Gene symbol']
@@ -48,6 +65,19 @@ def amrfinder_results(df, args):
 
 
 def blobtools_results(df, summary_df):
+    """
+
+    Parses blobtools output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        summary_df (pd.Dataframe): dataframe of grandeur results.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     logging.info("Getting blobtools results")
     df = pd.merge(df,summary_df[['sample','blobtools_organism_(per_mapped_reads)']],left_on='Sample_Name', right_on='sample', how='left')
     df = df.drop('sample', axis=1)
@@ -56,6 +86,18 @@ def blobtools_results(df, summary_df):
 
 
 def create_files(df):
+    """
+
+    Creates final files.
+    
+    Args:
+        df (pd.Dataframe): dataframe for results to print to file(s).
+    
+    Creates:
+        file (file): Results files. A lot of them.
+
+    """
+
     # columns for final files
     # For the results tab : top organism, serotypefinder/shigellatyper, seqsero2, coverage, warnings, blobtools, and kraken2
     finished_cols = ['wgs_id', 'Description', 'organism', 'SerotypeFinder (E. coli)', 'SeqSero Organism (Salmonella)', 'Sample_Project', 'coverage', 'Pass', 'warnings', 'blobtools_organism_(per_mapped_reads)']
@@ -81,6 +123,19 @@ def create_files(df):
 
 
 def emmtyper_results(df, args):
+    """
+
+    Parses emmtyper output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     emmtyper_df = results_to_df(f"{args.grandeur}/emmtyper/", "\t", "_emmtyper.txt")
 
     if not emmtyper_df.empty:
@@ -92,6 +147,19 @@ def emmtyper_results(df, args):
 
 
 def escherichia_serotype(df, summary_df, args):
+    """
+
+    Double checks output for Escherichia species
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        summary_df (pd.Dataframe): dataframe of grandeur results.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
     logging.info('Double checking Escherichia organism with shigatyper results')
 
     # creating a copy of the summary_df to just the Escherichia samples
@@ -123,6 +191,19 @@ def escherichia_serotype(df, summary_df, args):
 
 
 def fastani_results(df, args):
+    """
+
+    Parses fastani output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     fastani_df = results_to_df(f"{args.grandeur}/fastani/", ',', '_fastani.csv')
 
     # Getting the WGS organism from fastani or mash
@@ -139,14 +220,26 @@ def fastani_results(df, args):
 
 
 def grandeur_summary(df, args):
-    summary = args.grandeur + '/grandeur_summary.tsv'
-    logging.info('Extracting information from ' + summary)
+    """
+
+    Parses grandeur summary
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+    summary = f"{args.grandeur}/grandeur_summary.tsv"
+    logging.info(f"Extracting information from {summary}")
 
     # using results in summary file instead of the "original"
-    # blobtools      = args.grandeur + '/blobtools/blobtools_summary.txt'
-    # kraken2        = args.grandeur + '/kraken2/kraken2_summary.csv'
-    # serotypefinder = args.grandeur + '/serotypefinder/serotypefinder_results.txt'
-    # shigatyper     = args.grandeur + '/shigatyper/shigatyper_results.txt'
+    # blobtools      = f"{args.grandeur}/blobtools/blobtools_summary.txt"
+    # kraken2        = f"{args.grandeur}/kraken2/kraken2_summary.csv"
+    # serotypefinder = f"{args.grandeur}/serotypefinder/serotypefinder_results.txt"
+    # shigatyper     = f"{args.grandeur}/shigatyper/shigatyper_results.txt"
 
     # getting coverage
     summary_df     = pd.read_table(summary)
@@ -168,6 +261,18 @@ def grandeur_summary(df, args):
 
 
 def kraken2_results(df, summary_df):
+    """
+
+    Parses kraken2 output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
     logging.info("Getting kraken2 results")
     df = pd.merge(df,summary_df[['sample','kraken2_organism_(per_fragment)']],left_on='Sample_Name', right_on='sample', how='left')
     df = df.drop('sample', axis=1)
@@ -176,6 +281,18 @@ def kraken2_results(df, summary_df):
 
 
 def mash_results(df, args):
+    """
+
+    Parses mash output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
     mash_df = results_to_df(f"{args.grandeur}/mash/", ",", "summary.mash.csv")
 
     if not mash_df.empty:
@@ -196,6 +313,18 @@ def mash_results(df, args):
 
 
 def mlst_results(df, args):
+    """
+
+    Parses mlst output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+    """
+
     mlst_df = results_to_df(f"{args.grandeur}/mlst/", "\t", "mlst.tsv")
 
     if not mlst_df.empty:
@@ -207,10 +336,24 @@ def mlst_results(df, args):
 
 
 def pass_fail(df):
+    """
+
+    Uses coverage to set some basic pass/fail conditions.
+    
+    Args:
+        df (pd.Dataframe): results thus far.
+
+    Returns:
+        df (pd.Dataframe): Pandas dataframe with 'Pass' column.
+
+    """
+
+    # in general conditions
     df['Pass'] = 'TBD'
     df.loc[df['coverage'] >= 40, 'Pass'] = 'Y'
     df.loc[df['coverage'] < 20,  'Pass'] = 'X'
 
+    # organism specific conditions
     organisms = [
         'Acinetobacter',
         'Citrobacter',
@@ -243,6 +386,20 @@ def pass_fail(df):
 
 
 def results_to_df(path, delim, end):
+    """
+
+    Combines results for files into a dataframe
+    
+    Args:
+        path (str): directory with results stored.
+        delim (str): delimiter used in file ("," or "/t" are the most common).
+        end (str): The last characters of a filename.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     if not os.path.isdir(path):
         return pd.DataFrame()
     
@@ -263,6 +420,18 @@ def results_to_df(path, delim, end):
 
 
 def sample_sheet_to_df(samplesheet):
+    """
+
+    Creates pandas dataframe from MiSeq sample sheet.
+    
+    Args:
+        samplesheet (str): path to sample sheet.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
     logging.info(f"Getting samples from {samplesheet}")
 
     if os.path.exists(samplesheet):
@@ -279,15 +448,29 @@ def sample_sheet_to_df(samplesheet):
 
 
 def seqsero2_results(df, args):
-    seqsero2_dir  = args.grandeur + '/seqsero2/'
+    """
+
+    Parses seqsero2 output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+
+    seqsero2_dir = f"{args.grandeur}/seqsero2/"
         
     if not os.path.isdir(seqsero2_dir):
         return df
     
-    logging.info('Getting salmonella serotype information from ' + seqsero2_dir)
+    logging.info(f"Getting salmonella serotype information from {seqsero2_dir}")
 
+    # does not use results_to_df because of file structure
     dfs = []
-    files = glob.glob(args.grandeur + '/seqsero2/*/SeqSero_result.tsv')
+    files = glob.glob(f"{args.grandeur}/seqsero2/*/SeqSero_result.tsv")
     for file in files:
         ind_df = pd.read_table(file, sep='\t')
         if not ind_df.empty:
@@ -308,7 +491,22 @@ def seqsero2_results(df, args):
 
     return df
 
+
 def main():
+    """
+
+    Parses output from Grandeur version 3.
+    
+    Args:
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Prints:
+        files (str): Files for Results tab and ARLN Regional tab.
+    
+    """
+
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S', level=logging.INFO) 
+
     version = '0.1.24191'
 
     parser = argparse.ArgumentParser()
