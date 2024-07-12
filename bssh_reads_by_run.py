@@ -33,7 +33,7 @@ def bs_out(bash_command):
     """
     process = subprocess.Popen(bash_command.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-    stdout = output.decode("utf-8")
+    stdout = output.decode('utf-8')
     stdout = stdout.split('\n')
     stdout.pop(0)
     stdout.pop(1)
@@ -136,16 +136,17 @@ def main():
     
     logging.basicConfig(level=logging.INFO) 
 
-    parser = argparse.ArgumentParser(description="Description of your script")
+    parser = argparse.ArgumentParser(description='Downloads reads from basespace')
     
     # Define your arguments here
-    parser.add_argument("-r", "--run", type=str, required=True, help="Run name")
-    parser.add_argument("-o", "--out", type=str, required=False, default="reads", help="Directory where fastq files are downloaded")
+    parser.add_argument('-r', '--run', type=str, required=True, help='Run name')
+    parser.add_argument('-o', '--out', type=str, required=False, default='reads', help='Directory where fastq files are downloaded')
     
     # Parse the arguments
     args = parser.parse_args()
     
     download_reads(args.run, args.out)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

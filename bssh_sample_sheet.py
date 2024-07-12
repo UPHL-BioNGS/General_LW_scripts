@@ -49,11 +49,11 @@ def main():
 
     logging.basicConfig(level=logging.INFO) 
 
-    parser = argparse.ArgumentParser(description="Description of your script")
+    parser = argparse.ArgumentParser(description='Downloads a sample sheet from basespace')
     
     # Define your arguments here
-    parser.add_argument("-r", "--run", type=str, required=True, help="Run name")
-    parser.add_argument("-o", "--out", type=str, required=False, default="reads", help="Directory where sample sheet will be downloaded to")
+    parser.add_argument('-r', '--run', type=str, required=True, help='Run name')
+    parser.add_argument('-o', '--out', type=str, required=False, default='reads', help='Directory where sample sheet will be downloaded to')
     
     # Parse the arguments
     args = parser.parse_args()
@@ -61,5 +61,5 @@ def main():
     download_sample_sheet(args.run, args.out)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
