@@ -32,11 +32,12 @@ from bssh_sample_sheet import download_sample_sheet
 from aws_samplesheet_grandeur_create import grandeur_sample_sheet
 
 # setting up logging
-logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=f"/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run_{datetime.today().strftime('%Y_%m_%d')}.log", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
 logger = logging.getLogger('screen_run.py')
 logger.setLevel(logging.DEBUG)
+
 
 def log(_func=None, *, my_logger):
     def decorator_log(func):
@@ -73,6 +74,7 @@ def my_subprocess_run(*args, **kwargs):
     return subprocess.run(*args, **kwargs)
 
 
+@log(my_logger=logger)
 def check_bs(run_name, time_interval = 1200 ):
     """
     Checks bssh for run completeness
@@ -99,9 +101,9 @@ def check_bs(run_name, time_interval = 1200 ):
                 slack_message(f"{run_name} is \"Complete\" on BSSH")
                 logger.info(f"{run_name} is \"Complete\" on BSSH")
                 break
-            elif status == 'Failed' or status == 'Stopped' or status == 'Needs Attention' or status =='Timed Out':
-                slack_message(f"{run_name} has \"Failed\" or was unable to complete on BSSH; Script is aborting, check BSSH for more information")
-                logger.info(f"{run_name} has \"Failed\" or was unable to complete on BSSH; Script is aborting, check BSSH for more information {datetime.now()}")
+            elif status == 'Failed' or status == 'Stopped' or status == 'Needs Attention' or status == 'Timed Out':
+                slack_message(f"{run_name} has \"{status}\" status and was unable to complete on BSSH; Script is aborting, check BSSH for more information")
+                logger.warning(f"{run_name} has \"{status}\" status and was unable to complete on BSSH; Script is aborting, check BSSH for more information {datetime.now()}")
                 sys.exit(0)
             else:
                 logging.info(f"{run_name} has a {status} status")    
@@ -109,10 +111,12 @@ def check_bs(run_name, time_interval = 1200 ):
             logging.info(f"{run_name} not found in bssh yet!")
 
         if t == 0:
+            logging.info(f"sleeping for {time_interval}")
             time.sleep(time_interval)
 
     logging.info(f"{run_name} id is {idd}")    
     return idd
+
 
 # Slack_sdk values needed for sending messages to Slack. Uses an API already set up on the Slack website for the UPHL Workspace to post messages on the notifications channel.
 # Function makes sending Slack messages as easy as using the print funcition.
@@ -141,6 +145,7 @@ def slack_message(string):
         logger.info("Slack Error")
 
 
+@log(my_logger=logger)
 def main():
     """
     Waits for run to finish in BSSH.
@@ -152,7 +157,7 @@ def main():
 
     """
 
-    parser = argparse.ArgumentParser(description="Description of your script")
+    parser = argparse.ArgumentParser(description="Runs in screen for sequencing run")
     
     # Define your arguments here
     parser.add_argument('-r', '--run', type=str, required=True, help="Run name")
@@ -163,8 +168,10 @@ def main():
     # Parse the arguments
     args = parser.parse_args()
 
+    # wait until run is complete
     idd = check_bs(args.run)
 
+    # set path for downloading reads and sample sheet from basespace
     path = ''
     if args.grandeur:
         path = f"/Volumes/IDGenomics_NAS/pulsenet_and_arln/{args.run}/reads"
@@ -177,7 +184,9 @@ def main():
     if args.grandeur:
         grandeur_sample_sheet(args.run, f"{path}/SampleSheet.csv", path)
     
+    # close screen when finished
     my_subprocess_run(["screen", "-S", args.run, "-X", "quit"])
+
 
 if __name__ == "__main__":
     main()
