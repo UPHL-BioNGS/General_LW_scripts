@@ -23,6 +23,34 @@ The csv file that the script creates will be saved to the directory that you are
 
 Now click select group for the samples you just uploaded. Then choose 'Covidseq v1.0' after clicking 'Assign to Workflow'. And finally you are done!
 
+## aws_upload.py
+Uploads individual files or the contents of directories to an S3 bucket.
+
+Uses the default profile for UPHL Amazon HealthOmics.
+
+USAGE:
+```bash
+# uploading an entire directory
+python3 aws_upload.py -a UT-M07101-240710 -d /Volumes/IDGenomics_NAS/pulsenet_and_arln/UT-M07101-240710/reads
+
+# uploading a single file
+python3 aws_upload.py -a UT-M07101-240710 -f /Volumes/IDGenomics_NAS/pulsenet_and_arln/UT-M07101-240710/reads/SampleSheet.csv
+
+```
+
+
+## aws_download.py
+Downloads the contents of a directory in an S3 bucket to a local directory.
+
+Uses the default profile for UPHL Amazon HealthOmics.
+
+USAGE:
+```bash
+python3 aws_download.py -a UT-M07101-240710 -d /Volumes/IDGenomics_NAS/pulsenet_and_arln/UT-M07101-240710/aws_results
+```
+
+
+
 # Automation Scripts for ICA 
 Currently written for Pulsenet/ARLN samples that typically run on Grandeur and Mycosnp. The scripts are structured to run sequentially; and can be triggered manually or by the previous script. Each script send notifications to the UPHL slack channel to help monitor the progress of the sequencing analysis. These scripts use the python package of logging to track these scripts usage and track errors that occur while running. All scripts write to a log located at /Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log.
 ![alt text](images/ICA_automation.jpg)
