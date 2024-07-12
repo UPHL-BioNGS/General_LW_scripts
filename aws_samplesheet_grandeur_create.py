@@ -42,6 +42,7 @@ def find_files(sample_name, directory):
     else:
         logging.debug(f"Two files not found: {files}")
 
+
 def upload_sample_sheet_instructions(run_name, directory):
     """
     Instruction for uploading the sample sheet
@@ -54,6 +55,7 @@ def upload_sample_sheet_instructions(run_name, directory):
     """
     logging.info("To get sample sheet to S3 bucket:")
     logging.info(f"cd {directory} && aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sample_sheet.csv s3://dhhs-uphl-omics-inputs-dev/{run_name}/aws_sample_sheet.csv")
+
 
 def upload_reads_instructions(run_name, directory):
     """
@@ -109,6 +111,7 @@ def grandeur_sample_sheet(run_name, sample_sheet, directory):
     upload_sample_sheet_instructions(run_name, directory)
     upload_reads_instructions(run_name, directory)
 
+
 def main():
     """
     Creates an AWS-friendly sample sheet.
@@ -140,17 +143,11 @@ def main():
         logging.fatal(f"Sample sheet {args.sample_sheet} does not exist!")
         sys.exit()
 
-    # getting the directory of fastq files from some default locations
-    if args.dir is None or args.dir.strip() == "":
-        dir = f"/Volumes/IDGenomics_NAS/pulsenet_and_arln/{args.run}/reads/"
-    else:
-        dir = args.dir
-
-    if not os.path.exists(dir):
-        logging.fatal(f"Directory {dir} does not exist!")
+    if not os.path.exists(args.dir):
+        logging.fatal(f"Directory {args.dir} does not exist!")
         sys.exit()
 
-    grandeur_sample_sheet(args.run, args.sample_sheet, dir)
+    grandeur_sample_sheet(args.run, args.sample_sheet, args.dir)
 
 if __name__ == "__main__":
     main()
