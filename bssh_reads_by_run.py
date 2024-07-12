@@ -121,7 +121,7 @@ def get_sample_ids(idd):
     df = df[df['Name'] != 'Undetermined']
     df = df[df['Id'].str.contains('None') == False]
     idds=list(df['Id'])
-    logging.info("Reads ids are {idds}")
+    logging.info(f"Reads ids are {idds}")
     return idds
 
 
