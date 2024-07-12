@@ -201,6 +201,22 @@ The script will populate the vcf_files directory with the desired VCF files. Eac
 This script streamlines the process of collecting and organizing necessary data for mycoSNP analysis. It significantly reduces manual data handling and potential errors.
 
 
+## grandeur_to_sheets.py
+
+This script takes a MiSeq sample sheet and the directory of grandeur results (regardless of where they were run) and creates two files to make it "easy" to get results into the "Finished" and "ARLN_regional" tabs.
+
+EXAMPLE:
+```bash
+python3 grandeur_to_sheets.py -g aws_results -s SampleSheet.csv
+```
+
+Four files are generated:
+- arln_tab.tsv : tab-delimited results relevant to the "ARLN_regional" tab.
+- arln_tab.txt : ";" -delimited results relevant to the "ARLN_regional" tab.
+- finished_tab.tsv : tab-delimited results relevant to the "Finished" tab.
+- finished_tab.txt : ";" -delimited results relevant to the "Finished" tab.
+
+
 ## changeseqids.py
 
 This script updates sequence identifiers in the 'vcf-to-fasta.fasta' file, which is an output file of mycoSNP. It ensures that sequence IDs in the 'vcf-to-fasta.fasta' file, used in creating a Newick file, align with the specific naming conventions set by the CDC's Mycotic Disease Branch. Users must place three specific files in the same directory as this script:
