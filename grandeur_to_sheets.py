@@ -15,17 +15,20 @@ EXAMPLE:
 python3 grandeur_to_sheets.py -g <path to grandeur results> -s <input sample sheet>
 '''
 
+# ignore line too long warnings
+# pylint: disable=C0301
+
 # trying to keep dependencies really low
 import argparse
-import pandas as pd
 import os
+import sys
 import logging
 import glob
 
+import pandas as pd
+
 # local files
 from read_miseq_sample_sheet import read_miseq_sample_sheet
-
-
 
 
 def amrfinder_results(df, args):
@@ -60,7 +63,7 @@ def amrfinder_results(df, args):
         vir_df['virulence genes'] = vir_df['Gene symbol']
         df                        = pd.merge(df,vir_df[['Name','virulence genes']],left_on='Sample_Name', right_on='Name', how='left')
         df                        = df.drop('Name', axis=1)
-    
+
     return df
 
 
@@ -146,48 +149,7 @@ def emmtyper_results(df, args):
     return df
 
 
-def escherichia_serotype(df, summary_df, args):
-    """
 
-    Double checks output for Escherichia species
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        summary_df (pd.Dataframe): dataframe of grandeur results.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info('Double checking Escherichia organism with shigatyper results')
-
-    # creating a copy of the summary_df to just the Escherichia samples
-    ecoli_df                              = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
-    ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
-    ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
-    ecoli_df['O_H']                       = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
-    ecoli_df['ecoli_organism']            = 'Escherichia coli'
-
-    # making sure the top Shigella organism makes it to the spreadsheet for each ipaH+ sample
-    if 'shigatyper_hit' in summary_df.columns and 'mash_organism' in summary_df.columns:
-        shigella_df = ecoli_df[ecoli_df['shigatyper_hit'].str.contains('ipaH')]
-        for sample in shigella_df['sample'].tolist():
-            organism = 'Escherichia coli'
-            with open(f"{args.grandeur}/mash/{sample}.summary.mash.csv") as file:
-                for line in file:
-                    line = line.strip()
-                    if 'Shigella' in line:
-                        organism = line.split(',')[-1].replace('_', ' ')
-                        break
-            ecoli_df.loc[ecoli_df['sample'] == sample, 'ecoli_organism'] = organism
-
-    ecoli_df['SerotypeFinder (E. coli)'] = ecoli_df['ecoli_organism'] + " " + ecoli_df['O_H']
-
-    df = pd.merge(df, ecoli_df[['sample','SerotypeFinder (E. coli)']],left_on='Sample_Name', right_on='sample', how='left')
-    df = df.drop('sample', axis=1)
-
-    return df
 
 
 def fastani_results(df, args):
@@ -219,6 +181,42 @@ def fastani_results(df, args):
     return df
 
 
+
+def fix_escherichia(row, directory):
+    """
+
+    Checking for ipaH.
+    
+    Args:
+        row (pd.Dataframe): dataframe row
+    
+    Returns:
+        organism (str): Predicted organism.
+
+    """
+    sample = row['Sample_Name']
+    organism = row['organism']
+    shiga_hit = row['shigatyper_hit']
+
+    if pd.notna(row['ecoli_O_H']) and pd.notna(row['shigatyper_hit']):
+        if 'IpaH' in shiga_hit:
+            org_check = 'Shigella'
+        else:
+            org_check = 'Escherichia'
+
+        fastani_file = f"{directory}/fastani/{sample}_fastani.csv"
+        if os.path.exists(fastani_file):
+            with open(fastani_file) as file:
+                for line in file:
+                    line = line.strip()
+                    if org_check in line:
+                        ref = line.split(',')[2].split('_')
+                        organism = f"{ref[0]} {ref[1]}"
+                        break
+
+    return organism
+
+
 def grandeur_summary(df, args):
     """
 
@@ -248,8 +246,8 @@ def grandeur_summary(df, args):
     df['coverage'] = df['coverage'].fillna(0)
     df['coverage'] = df['coverage'].round(2)
 
-    if 'serotypefinder_Serotype_O' in summary_df.columns:
-        df = escherichia_serotype(df, summary_df, args)
+    if 'shigatyper_hit' in summary_df.columns and 'serotypefinder_Serotype_O' in summary_df.columns and 'serotypefinder_Serotype_H'  in summary_df.columns:
+        df = serotypefinder_results(df, summary_df)
 
     if 'kraken2_organism_(per_fragment)' in summary_df.columns:
         df = kraken2_results(df, summary_df)
@@ -298,7 +296,7 @@ def mash_results(df, args):
     if not mash_df.empty:
         mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
         mash_df = mash_df.drop_duplicates(subset=['sample'], keep = 'first')
-        
+
         df = pd.merge(df,mash_df[['sample','organism']],left_on='Sample_Name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
 
@@ -335,7 +333,7 @@ def mlst_results(df, args):
     return df
 
 
-def pass_fail(df):
+def pass_fail(df, args):
     """
 
     Uses coverage to set some basic pass/fail conditions.
@@ -382,6 +380,14 @@ def pass_fail(df):
     df             = df.sort_values('wgs_id')
     df['organism'] = df['organism'].str.replace('_',' ',regex=False)
 
+
+    # fix shigella/ecoli mixups
+    if 'ecoli_O_H' in df.columns and 'shigatyper_hit' in df.columns and 'mash_organism' in df.columns:
+        df['organism'] = df.apply(fix_escherichia, axis=1, directory = args.grandeur)
+
+        df['SerotypeFinder (E. coli)'] = None
+        df['SerotypeFinder (E. coli)'] = df.apply(lambda row: f"{row['organism']} {row['ecoli_O_H']}" if pd.notna(row['ecoli_O_H']) else row['SerotypeFinder (E. coli)'], axis=1)
+
     return df
 
 
@@ -402,7 +408,7 @@ def results_to_df(path, delim, end):
 
     if not os.path.isdir(path):
         return pd.DataFrame()
-    
+
     logging.info(f"Getting information from {path}")
 
     dfs = []
@@ -416,7 +422,7 @@ def results_to_df(path, delim, end):
     if dfs:
         return pd.concat(dfs, ignore_index=True)
     else:
-        return pd.DataFrame() 
+        return pd.DataFrame()
 
 
 def sample_sheet_to_df(samplesheet):
@@ -441,10 +447,10 @@ def sample_sheet_to_df(samplesheet):
         df['wgs_id']  = df['Sample_Name'].str.replace('-UT.*','', regex=True)
 
         return df
-    
+
     else:
         logging.fatal('Sample sheet could not be located! (Specify with -s)')
-        exit(1)
+        sys.exit(1)
 
 
 def seqsero2_results(df, args):
@@ -462,10 +468,10 @@ def seqsero2_results(df, args):
     """
 
     seqsero2_dir = f"{args.grandeur}/seqsero2/"
-        
+
     if not os.path.isdir(seqsero2_dir):
         return df
-    
+
     logging.info(f"Getting salmonella serotype information from {seqsero2_dir}")
 
     # does not use results_to_df because of file structure
@@ -474,7 +480,7 @@ def seqsero2_results(df, args):
     for file in files:
         ind_df = pd.read_table(file, sep='\t')
         if not ind_df.empty:
-                dfs.append(ind_df)
+            dfs.append(ind_df)
 
     if dfs:
         seqsero2_df = pd.concat(dfs, ignore_index=True)
@@ -492,6 +498,35 @@ def seqsero2_results(df, args):
     return df
 
 
+def serotypefinder_results(df, summary_df):
+    """
+
+    Parses serotypefinder output
+    
+    Args:
+        df (pd.Dataframe): dataframe for results thus far.
+        summary_df (pd.Dataframe): dataframe of grandeur results.
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
+    logging.info('Double checking Escherichia organism with shigatyper results')
+
+    if 'shigatyper_hit' in summary_df.columns and 'serotypefinder_Serotype_O' in summary_df.columns and 'serotypefinder_Serotype_H'  in summary_df.columns:
+        # creating a copy of the summary_df to just the Escherichia samples
+        ecoli_df                              = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
+        ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
+        ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
+        ecoli_df['ecoli_O_H']                       = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
+
+        df = pd.merge(df, ecoli_df[['sample','ecoli_O_H', 'shigatyper_hit', 'mash_organism']],left_on='Sample_Name', right_on='sample', how='left')
+        df = df.drop('sample', axis=1)
+
+    return df
+
+
 def main():
     """
 
@@ -505,7 +540,7 @@ def main():
     
     """
 
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S', level=logging.INFO) 
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S', level=logging.INFO)
 
     version = '0.1.24191'
 
@@ -517,23 +552,23 @@ def main():
 
     df = sample_sheet_to_df(args.samplesheet)
 
-    df = grandeur_summary(  df, args)
+    df = grandeur_summary(      df, args)
 
-    df = fastani_results(   df, args)
+    df = fastani_results(       df, args)
 
-    df = mash_results(      df, args)
+    df = mash_results(          df, args)
 
-    df = seqsero2_results(  df, args)
+    df = seqsero2_results(      df, args)
 
-    df = mlst_results(      df, args)
+    df = mlst_results(          df, args)
 
-    df = emmtyper_results(  df, args)
+    df = emmtyper_results(      df, args)
 
-    df = amrfinder_results( df, args)
+    df = amrfinder_results(     df, args)
 
-    df = pass_fail(         df)
+    df = pass_fail(df, args)
 
-    create_files(           df)
+    create_files(df)
 
 
 if __name__ == "__main__":
