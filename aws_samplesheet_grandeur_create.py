@@ -37,7 +37,7 @@ def find_files(sample_name, directory):
 
     """
     
-    files = list(Path(directory).glob(f"{sample_name}*fastq.gz"))
+    files = sorted(list(Path(directory).glob(f"{sample_name}*fastq.gz")))
     if len(files) >=2:
         # Return the first two files, and there should only be two matches
         logging.debug(f"The two files found: {files}")
