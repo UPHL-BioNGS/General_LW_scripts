@@ -67,6 +67,9 @@ ncovid['receivedDate']= pd.to_datetime(ncovid['receivedDate'], errors='coerce').
 panther=ncovid[(ncovid['receivedDate'] > plot_start) & (ncovid['receivedDate'] < plot_end)]
 panther=panther.drop(columns=['receivedDate'])
 ppanther = panther[panther['result']== 'SARS-COV-2 Detected']
+#HOT FIX FOR SMH2
+smh2=ncovid[ncovid['customer']== 'SMH2']
+ppanther = pd.concat([ppanther, smh2], ignore_index=True)
 
 # Create DF to merge into
 clarity= pd.DataFrame(columns = ['Sample/Name', 'Container/Type', 'Container/Name', 'Sample/Well Location',
