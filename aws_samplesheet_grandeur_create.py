@@ -41,7 +41,13 @@ def find_files(sample_name, directory):
     if len(files) >=2:
         # Return the first two files, and there should only be two matches
         logging.debug(f"The two files found: {files}")
-        return files[:2]
+
+        # setting the minimum filesize (5 MB in bytes_
+        min_size = 5 * 1024 * 1024
+        if files[0].stat().st_size > min_size and files[1].stat().st_size > min_size:
+            return files[:2]
+        else:
+            logging.debug(f"Both fastq files were not over 5MB!")
     else:
         logging.debug(f"Two files not found: {files}")
 
