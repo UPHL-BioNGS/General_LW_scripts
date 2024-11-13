@@ -226,3 +226,17 @@ aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sam
 ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {} s3://dhhs-uphl-omics-inputs-dev/$run/{}
 ```
 
+## grandeur_to_sheets.py
+
+This script takes a MiSeq sample sheet and the directory of grandeur results (regardless of where they were run) and creates two files to make it "easy" to get results into the "Finished" and "ARLN_regional" tabs.
+
+EXAMPLE:
+```bash
+python3 grandeur_to_sheets.py -g aws_results -s SampleSheet.csv
+```
+
+Four files are generated:
+- arln_tab.tsv : tab-delimited results relevant to the "ARLN_regional" tab.
+- arln_tab.txt : ";" -delimited results relevant to the "ARLN_regional" tab.
+- finished_tab.tsv : tab-delimited results relevant to the "Finished" tab.
+- finished_tab.txt : ";" -delimited results relevant to the "Finished" tab.
