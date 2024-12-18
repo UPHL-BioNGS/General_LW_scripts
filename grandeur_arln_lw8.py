@@ -83,35 +83,29 @@ def amrfinder_results(sample, df, args):
 
     if not amrfinder_df.empty:
         amrfinder_df = amrfinder_df.sort_values('Gene symbol')
-        df['amr_genes'] = ', '.join(amrfinder_df['Gene symbol'])
+        df['Other Gene Result Identified'] = ', '.join(amrfinder_df['Gene symbol'])
 
         for key in genes.keys():
-            list_of_genes = []
 
             for gene in genes[key]['search_term']:
-                list_of_genes = []
                 if gene:
                     #  search through amrfinder_df for search term in 'Sequence name' column
-                    subset = amrfinder_df[amrfinder_df["Sequence name"].str.lower().str.contains(f"{gene}")]
+                    subset = amrfinder_df[amrfinder_df["Sequence name"].str.contains(gene, case=False)]
                     if not subset.empty:
                         df.loc[0, key] = "Detected"
-                        list_of_genes = list_of_genes.append(subset["Gene symbol"])
+                        df[key + "s Identified"] = df[key + "s Identified"] + subset["Gene symbol"]
 
         for key in specific_genes.keys():
-            list_of_genes = []
 
-            for gene in genes[key]['search_term']:
-                list_of_genes = []
+            for gene in specific_genes[key]['search_term']:
                 if gene:
                     #  search through amrfinder_df for search term in 'Sequence name' column
-                    subset = amrfinder_df[amrfinder_df["Sequence name"].str.lower().str.contains(f"[\b]{gene}[\b]")] # |{gene}[\s|\n]
+                    subset = amrfinder_df[amrfinder_df["Sequence name"].str.contains(f"[\b]{gene}[\b]", case=False)]
                     if not subset.empty:
                         df.loc[0, key] = "Detected"
-                        list_of_genes = list_of_genes.append(subset["Gene symbol"])
+                        df[key + "s Identified"] = df[key + "s Identified"] + subset["Gene symbol"]
 
 
-        if list_of_genes:
-            df.loc[0, key + "s Identified"] = ','.join(list_of_genes)
     return df
 
 def create_columns(df, column_names):
@@ -135,7 +129,7 @@ def create_columns(df, column_names):
     return df
 
 
-def create_files(sample, df, args):
+def create_files(df, columns, args):
     """
 
     Creates final files.
@@ -147,9 +141,12 @@ def create_files(sample, df, args):
         file (file): Results files. A lot of them.
 
     """
-    logging.info('Writing file for ARLN tab')
-    df.to_csv(f"{args.outdir}/${sample}_arln_.csv", index=False, sep = ',' )
-    logging.info(f"{args.outdir}/${sample}_arln_.csv")
+
+    logging.info('Writing file for ARLN bacterial isolates')    
+    for idx, row in df.iterrows():
+        filename = f"{args.outdir}/{row['ARLN WGS ID']}_arln.csv"
+        row_df = pd.DataFrame([row])
+        row_df.to_csv(filename, columns=columns, index=False, sep= ',')
 
 
 def grandeur_summary(df, args):
@@ -200,50 +197,115 @@ def mlst_results(sample, args):
     return mlst
 
 def organism_results(sample, df, args):
+    """
+
+    Gets predicted organism from WGS results
+    
+    Args:
+        sample (str): sample id
+        df (pd.Dataframe): results thus far
+        args (argparse.Namespace): Parsed command-line arguments.
+    
+    Returns:
+        df (pd.Dataframe): Pandas dataframe of the parsed output.
+
+    """
 
     organism = 'unknown'
-    fastani_file = glob.glob(f"{args.grandeur}/fastani/{sample}-UT*fastani.csv")
-    if fastani_file:
-        fastani_df   = pd.read_table(fastani_file[0], sep=",")
-        if not fastani_df.empty:
-            fastani_df             = fastani_df[fastani_df['ANI estimate'] >= 0.95]
-            fastani_df             = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
-            fastani_df             = fastani_df.drop_duplicates(subset=['sample'], keep = 'first')
-            fastani_df['organism'] = fastani_df['reference'].str.replace('_GC.*', '', regex = True)
-            organism = fastani_df.iloc[0,'organism']
-
-    blobtools_file = glob.glob(f"{args.grandeur}/blobtools/{sample}-UT*blobtools.txt")
-    if blobtools_file:
-        blobtools_df   = pd.read_table(blobtools_file[0], sep="\t")
-        if not blobtools_df.empty:
-            print(blobtools_df)
-            organism = blobtools_df.iloc[0,'organism']
-    
-    mash_file = glob.glob(f"{args.grandeur}/mash/{sample}-UT*summary.mash.csv")
-    if mash_file:
-        mash_df   = pd.read_table(mash_file[0], sep=",")
-        if not mash_df.empty:
-            mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
-            organism = mash_df.iloc[0,'organism']
-    
-    kraken2_file = glob.glob(f"{args.grandeur}/kraken2/{sample}-UT*summary_kraken2.csv")
-    if kraken2_file:
-        kraken2_df   = pd.read_table(kraken2_file[0], sep=",")
-        if not kraken2_df.empty:
-            print(kraken2_df)
-            organism = kraken2_df.iloc[0,'organism']
-
-    if "Shigella" not in organism and "Escherichia" not in organism:
-        return organism
-    
-    if "ipah" in df.loc[0, 'amr_genes']:
-        print("ipah")
+    org_check = ""
+    if "ipaH" in df.loc[0, 'amr_genes']:
         org_check = 'Shigella'
     else:
         org_check = 'Escherichia'
 
-    print(fastani_df[fastani_df['organism'].contains(org_check)])
+    # first choice is fastani
+    fastani_file = glob.glob(f"{args.grandeur}/fastani/{sample}-UT*fastani.csv")
+    fastani_df = pd.DataFrame()
+    if fastani_file:
+        logging.info(f"Getting organism from fastani in {fastani_file[0]}")
+        fastani_df   = pd.read_table(fastani_file[0], sep=",")
+        if not fastani_df.empty:
+            # filter fastani dataframe
+            fastani_df = fastani_df[fastani_df['ANI estimate'] >= 0.9]
+            fastani_df = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
+            fastani_df = fastani_df.drop_duplicates(subset=['sample'], keep = 'first')
+            if not fastani_df.empty:
+                fastani_df['organism'] = fastani_df['reference'].str.replace('_GC.*', '', regex = True)
+                organism = fastani_df.iloc[0]['organism']
 
+                # fix Excherichia/Shigella mixups
+                if 'Shigella' in organism or 'Escherichia' in organism:
+                    fastani_df = fastani_df[fastani_df['organism'].str.contains(org_check, case= False)]
+                    if not fastani_df.empty:
+                        organism = fastani_df.iloc[0]['organism']
+                    else:
+                        organism = 'unknown'
+
+    # second choice is blobtools
+    if organism == 'unknown':
+        blobtools_file = glob.glob(f"{args.grandeur}/blobtools/{sample}-UT*blobtools.txt")
+        if blobtools_file:
+            logging.info(f"Getting organism from blobtools in {blobtools_file[0]}")
+            blobtools_df   = pd.read_table(blobtools_file[0], sep="\t")
+            if not blobtools_df.empty:
+                # filtering the blobtools results
+                values_to_drop = ['undef', 'all', 'missing']
+                blobtools_df = blobtools_df[~blobtools_df.isin(values_to_drop).any(axis=1)]
+                blobtools_df = blobtools_df[blobtools_df['bam0_read_map_p'] >= 70]
+                if not blobtools_df.empty:
+                    blobtools_df = blobtools_df.sort_values('bam0_read_map_p', ascending=False)
+                    organism = blobtools_df.iloc[0]['name']
+                    
+                    # fix Excherichia/Shigella mixups
+                    if 'Shigella' in organism or 'Escherichia' in organism:
+                        blobtools_df = blobtools_df[blobtools_df['name'].str.contains(org_check, case=False)]
+                        if not blobtools_df.empty:
+                            organism = blobtools_df.iloc[0]['name']
+                        else:
+                            organism = 'unknown'
+
+    # checking mash next
+    if organism == 'unknown':
+        mash_file = glob.glob(f"{args.grandeur}/mash/{sample}-UT*summary.mash.csv")
+        logging.info(f"Getting organism from mash in {mash_file[0]}")
+        if mash_file:
+            mash_df   = pd.read_table(mash_file[0], sep=",")
+            if not mash_df.empty:
+                # filtering the mash dataframe
+                mash_df = mash_df[mash_df['P-value'] <= 0.1]
+                mash_df = mash_df[mash_df['mash-distance'] <= 0.25]
+                if not mash_df.empty:
+                    mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
+                    organism = mash_df.iloc[0]['organism']
+
+                    # fix Excherichia/Shigella mixups
+                    if 'Shigella' in organism or 'Escherichia' in organism:
+                        mash_df = mash_df[mash_df['organism'].str.contains(org_check, case=False)]
+                        if not mash_df.empty:
+                            organism = mash_df.iloc[0]['organism']
+                        else:
+                            organism = 'unknown'
+
+    # last ditch effort
+    if organism == 'unknown':    
+        kraken2_file = glob.glob(f"{args.grandeur}/kraken2/{sample}-UT*summary_kraken2.csv")
+        if kraken2_file:
+            logging.info(f"Getting organism from kraken2 in {kraken2_file[0]}")
+            kraken2_df   = pd.read_table(kraken2_file[0], sep=",")
+            if not kraken2_df.empty:
+                # filtering the kraken2 file
+                kraken2_df = kraken2_df[kraken2_df["Percentage of fragments"] >= 0.6]
+                if not kraken2_df.empty:
+                    kraken2_df = kraken2_df.sort_values("Percentage of fragments", ascending=False)
+                    organism = kraken2_df.iloc[0]['Scientific name']
+
+                    # fix Excherichia/Shigella mixups
+                    if 'Shigella' in organism or 'Escherichia' in organism:
+                        kraken2_df = kraken2_df[kraken2_df['Scientific name'].str.contains(org_check, case=False)]
+                        if not kraken2_df.empty:
+                            organism = kraken2_df.iloc[0]['Scientific name']
+                        else:
+                            organism = 'unknown'
 
 def pass_fail(df, args):
     """
@@ -316,7 +378,6 @@ def results_for_sample(sample, args):
     df = amrfinder_results(sample, df, args)
     df.loc[0, 'WGS Organism'] = organism_results(sample, df, args)
     return df
-
 
 
 def sample_sheet_to_df(args):
@@ -451,20 +512,10 @@ def main():
 
     for sample in df['ARLN WGS ID']:
         sample_df = results_for_sample(sample, args)
-        df = pd.merge(df, sample_df)
+        for col in sample_df.columns:
+            df.loc[df['ARLN WGS ID'] == sample, col] = sample_df.iloc[0][col]
 
-
-    print(df)
-
-
-    # wgs organism
-
-    # gene results
-    #df = amrfinder_results(     df, args)
-
-    #df = pass_fail(df, args)
-
-    #create_files(df, column_names)
+    create_files(df, column_names, args)
 
 
 if __name__ == "__main__":
