@@ -191,7 +191,7 @@ def fix_escherichia(row, directory):
 
     """
     sample = row['Sample_Name']
-    organism = row['organism']
+    organism = str(row['organism'])
 
     if "Shigella" not in organism and "Escherichia" not in organism:
         return organism
