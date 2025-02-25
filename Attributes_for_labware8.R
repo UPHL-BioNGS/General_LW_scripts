@@ -20,8 +20,7 @@ library(yaml)
   config<-read_yaml("config.yml")
   base_path<-config$paths$covidseq_base
 
-  args = commandArgs(trailingOnly=T)
-  args[1]<-c("UT-VH00770-250214")
+  args = commandArgs(trailingOnly=T);  args[1]<-c("UT-VH00770-250214")
   full_path_run<- file.path(base_path,args[1],"covidseq_output", "Logs_Intermediates","SampleSheetValidation","SampleSheet_Intermediate.csv")
   full_path_pango<- file.path(base_path,args[1],"CecretPangolin","cecret_results.csv")
   runPath<-file.path(base_path,args[1]);
@@ -51,10 +50,10 @@ library(yaml)
     }
     SRA_data <- as.data.frame(cbind(as.character(sampleID), as.character(SAMNv),as.character(SRRv)))
     colnames(SRA_data)<-c("Clarity ID", "SRA Accession", "Biosample Accession")
-    cat("\rData from NCBI/SRA was retrieved sucesseful")
+    cat("\rData from NCBI/SRA was retrieved sucesseful\n")
 
 # Retrieving GenBank Accession from GenBank DB using rentrez/nuccore
-    cat("Wait, Retrieving GenBank Accessions from NCBI/GenBank DB using rentrez")
+    cat("Wait, Retrieving GenBank Accessions from NCBI/GenBank DB using rentrez\n")
     GenBank_Accession<-vector();SRRv<-vector(); SAMNv<-vector();sampleID<-vector()
     for (i in 1:nrow(Clarity_IDs_PASSED)){
       sample<-Clarity_IDs_PASSED[i,1]; 
@@ -79,22 +78,21 @@ library(yaml)
     GISAID_path<-paste(runPath,GISAID_file,sep="/")
     GISAID_data <- read.table(GISAID_path,header=TRUE,sep="\t", stringsAsFactors=FALSE,comment.char="", fill = T,quote="\"")[,c("Virus.name","Accession.ID")]
     GISAID_data$Virus.name<-gsub("^hCoV-19/USA/(.*)/2025","\\1",GISAID_data$Virus.name)
-    colnames(GISAID_data)<-c("Clarity ID","GenBank Accesion")
+    colnames(GISAID_data)<-c("Clarity ID","GISAID Accesion")
     Attributes<-merge(SRA_GenBak_data,GISAID_data, by.x ="Clarity ID", by.y = "Clarity ID", all.x = T)
-    colnames(Attributes)<-c("LIMS_TEST_ID","SRA Accession","Biosample Accession","GenBank Accession","GISAID Accesion")
+    Clarity_IDs<-Clarity_IDs[,c(2,1)] #colnames(Attributes)<-c("LIMS_TEST_ID","SRA Accession","Biosample Accession","GenBank Accession","GISAID Accesion")
 
 # Atributes.txt file generation
     # adding to Attributes the samples that failed. All samples passed and failed must be submitted to Lab Ware 8
-    Atributes<-merge(Clarity_IDs[2],  Attributes, by.x ="V2", by.y = "LIMS_TEST_ID", all.x = TRUE)
-    colnames( Atributes)<-c("LIMS_TEST_ID", "SRA Accession", "Biosample Accession", "GenBank Accession", "GISAID Accession")
+     Attributes<-merge(Clarity_IDs,  Attributes, by.x ="V2", by.y = "Clarity ID", all.x = TRUE) 
 
-    Atributes$"GISAID Accession"[is.na(Atributes$"GISAID Accession")]= "not Submitted"
-    Atributes$"SRA Accession"[is.na(Atributes$"SRA Accession")]= "not Submitted"
-    Atributes$"Biosample Accession"[is.na(Atributes$"Biosample Accession")]= "not Submitted"
-    Atributes$"GenBank Accession"[is.na(Atributes$"GenBank Accession")]= "not Submitted"
+for (col in colnames(Attributes)) {
+  if (is.character(Attributes[[col]])) {
+    Attributes[[col]][is.na(Attributes[[col]])] <- "Not Submitted"
+  }
+}
 
-    Attibuttes<-Atributes %>% mutate("Cluster Code" = "")
-
-    write.table(Attibuttes,paste(runPath,"/",args[1],"_6Attributes.txt",sep=""), sep = ',', row.names = FALSE, col.names = TRUE, eol="\r\n", quote = FALSE)
-    cat("Attributes.txt file for Labware 8 is complete and can be found at",runPath,"\n")
+   Attributes<-Attributes %>% mutate("Cluster Code" = "")
+   colnames(Attributes)<-c("Clarity IDs","LIMS_TEST_ID", "SRA Accession", "Biosample Accession", "GenBank Accession", "GISAID Accession","Cluster Code") 
+   cat("Attributes.txt file for Labware 8 is complete and can be found at",runPath,"\n")
   
