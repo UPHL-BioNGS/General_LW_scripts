@@ -226,3 +226,23 @@ aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sam
 ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {} s3://dhhs-uphl-omics-inputs-dev/$run/{}
 ```
 
+
+## Rscript.R
+The Results.R script is designed to collect and process COVID-related data after the run sequencing and analysis are completed. The output includes results formatted specifically for LabWare 8, with key identifiers such as LIMS_TEST_ID,Run Name,Submission ID,Non-Ambiguous Bases,Nextclade clade,Lineage.
+The script generates a Results.txt file, which is saved in the runName location with the following file name format: runName-Results.txt. The file is saved at the following path:
+/Volumes/NGS/Analysis/covidseq/runName.
+To run the Results.R script, you nee to specify onle one parameter: RunName
+
+Eaxample:
+```
+Rscript Results.R UT-VH00770-250214
+
+```
+After the script has been executed, the Results.txt file should be manually moved to the appropriate directory: 
+
+``` /Volumes/DDCP/Division Shared Files/DCPIP EDX/UPHL/NGS
+```
+Once the file is in the correct location, it will then be moved to AWS for Lab Ware 8 for processing.
+
+
+
