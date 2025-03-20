@@ -2,8 +2,8 @@
 
 """
 Author: Erin Young
-Released: 2024-07-11
-Version: 0.0.1
+Updated: 2025-03-20
+Version: 0.0.2
 Description:
     This script should create a sample sheet for aws usage for grandeur.
 
@@ -20,8 +20,7 @@ import logging
 from pathlib import Path
 
 # local
-from samplesheet_to_df import read_miseq_sample_sheet
-
+from General_LW_scripts.miseq_samplesheet_to_df import read_miseq_sample_sheet
 
 def find_files(sample_name, directory):
     """
