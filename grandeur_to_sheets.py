@@ -64,6 +64,7 @@ def amrfinder_results(df, args):
 
     if not amrfinder_df.empty:
         amrfinder_df              = amrfinder_df.sort_values(f"{element_or_gene} symbol")
+        amrfinder_df['Name']      = amrfinder_df['Name'].astype('str')
 
         # amr results
         amr_df                    = amrfinder_df[amrfinder_df[f"{element_or_gene_type}"] == 'AMR'].copy()
@@ -117,6 +118,7 @@ def circulocov_results(df, args):
 
     logging.info("Getting circulocov results")
     circulocov_df = pd.read_table(f"{args.grandeur}/circulocov/circulocov_summary.tsv")
+    circulocov_df['sample'] = circulocov_df['sample'].astype('str')
     circulocov_df = circulocov_df[circulocov_df["contigs"].str.strip() == "all"]
     circulocov_df['coverage'] = circulocov_df['illumina_meandepth']
 
@@ -183,6 +185,7 @@ def emmtyper_results(df, args):
     emmtyper_df = results_to_df(f"{args.grandeur}/emmtyper/", "\t", "_emmtyper.txt")
 
     if not emmtyper_df.empty:
+        emmtyper_df['sample'] = emmtyper_df['sample'].astype('str')
         emmtyper_df['emm type'] = emmtyper_df['Predicted emm-type']
         df = pd.merge(df,emmtyper_df[['sample','emm type']],left_on='sample_name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
@@ -217,6 +220,7 @@ def fastani_results(df, args):
         fastani_df             = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
         fastani_df             = fastani_df.drop_duplicates(subset=['sample'], keep = 'first')
         fastani_df['organism'] = fastani_df['reference'].str.replace('_GC.*', '', regex = True)
+        fastani_df['sample']   = fastani_df['sample'].astype('str')
 
         df = pd.merge(df,fastani_df[['sample','organism']],left_on='sample_name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
@@ -246,6 +250,7 @@ def fix_escherichia(row, directory):
     df = results_to_df(f"{directory}/ncbi-AMRFinderplus/", "\t", "_amrfinder_plus.txt")
 
     if not df.empty:
+        df['Name'] = df['Name'].astype('str')
         ipah_presence=''
         if not df[(df['Name'] == sample) & (df['Gene symbol'].str.contains("ipaH", case=False))].empty:
             org_check = 'Shigella'
@@ -290,6 +295,7 @@ def grandeur_summary(df, args):
 
     # getting coverage
     summary_df     = pd.read_table(summary)
+    summary_df['sample'] = summary_df['sample'].astype('str')
 
     required_cols = {'sample', 'coverage', 'warnings'}
     available_cols = required_cols.intersection(summary_df.columns)
@@ -301,7 +307,7 @@ def grandeur_summary(df, args):
         df['coverage'] = df['coverage'].fillna(0)
         df['coverage'] = df['coverage'].round(2)
 
-    if 'shigatyper_hit' in summary_df.columns and 'serotypefinder_Serotype_O' in summary_df.columns and 'serotypefinder_Serotype_H'  in summary_df.columns:
+    if 'shigatyper_hit' in summary_df.columns.str.lower() and 'serotypefinder_serotype_o' in summary_df.columns.str.lower() and 'serotypefinder_serotype_h' in summary_df.columns.str.lower():
         df = serotypefinder_results(df, summary_df)
 
     if 'kraken2_organism_(per_fragment)' in summary_df.columns:
@@ -356,6 +362,7 @@ def mash_results(df, args):
         mash_df = results_to_df(f"{args.grandeur}/mash/", ",", "summary.mash.csv")
 
     if not mash_df.empty:
+        mash_df['sample'] = mash_df['sample'].astype('str')
         mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
         mash_df = mash_df.drop_duplicates(subset=['sample'], keep = 'first')
 
@@ -389,6 +396,7 @@ def mlst_results(df, args):
     mlst_df = results_to_df(f"{args.grandeur}/mlst/", "\t", "mlst.tsv")
 
     if not mlst_df.empty:
+        mlst_df['sample'] = mlst_df['sample'].astype('str')
         mlst_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST'].astype('str')
         df              = pd.merge(df,mlst_df[['sample','mlst']],left_on='sample_name', right_on='sample', how='left')
         df              = df.drop('sample', axis=1)
@@ -510,6 +518,7 @@ def sample_sheet_to_df(samplesheet):
 
         df['lims_id'] = df['sample_id'].str.replace(  '-UT.*','', regex=True)
         df['wgs_id']  = df['sample_name'].str.replace('-UT.*','', regex=True)
+        df[['sample_id', 'sample_name']] = df[['sample_id', 'sample_name']].astype('str')
         
         return df
 
@@ -547,12 +556,14 @@ def seqsero2_results(df, args):
         if not ind_df.empty:
             dfs.append(ind_df)
 
+
     if dfs:
         seqsero2_df = pd.concat(dfs, ignore_index=True)
     else:
         return df
 
     if not seqsero2_df.empty:
+        seqsero2_df['sample'] = seqsero2_df['sample'].astype('str')
         seqsero2_df['SeqSero Organism (Salmonella)'] = 'Salmonella enterica serovar ' + seqsero2_df['Predicted serotype'] + ':' + seqsero2_df['Predicted antigenic profile']
 
         df = pd.merge(df,seqsero2_df[['sample','SeqSero Organism (Salmonella)']],left_on='sample_name', right_on='sample', how='left')
@@ -579,12 +590,18 @@ def serotypefinder_results(df, summary_df):
     """
     logging.info('Double checking Escherichia organism with shigatyper results')
 
-    if 'shigatyper_hit' in summary_df.columns and 'serotypefinder_Serotype_O' in summary_df.columns and 'serotypefinder_Serotype_H'  in summary_df.columns:
+    if 'shigatyper_hit' in summary_df.columns.str.lower() and 'serotypefinder_serotype_o' in summary_df.columns.str.lower() and 'serotypefinder_serotype_h'  in summary_df.columns.str.lower():
         # creating a copy of the summary_df to just the Escherichia samples
         ecoli_df                              = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
-        ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_Serotype_O'].fillna("none")
-        ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_Serotype_H'].fillna("none")
-        ecoli_df['ecoli_O_H']                       = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
+
+        if ecoli_df.empty:
+            ecoli_df                          = summary_df[summary_df['fastani_top_organism'].str.contains('Shigella', na=False) | summary_df['fastani_top_organism'].str.contains('Escherichia', na=False) ].copy()
+        
+        ecoli_df.columns = ecoli_df.columns.str.lower()
+        ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_serotype_o'].fillna("none")
+        ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_serotype_h'].fillna("none")
+        ecoli_df['ecoli_O_H']                 = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
+        ecoli_df['sample']                    = ecoli_df['sample'].astype('str')
 
         df = pd.merge(df, ecoli_df[['sample','ecoli_O_H', 'shigatyper_hit', 'mash_organism']],left_on='sample_name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
