@@ -240,7 +240,14 @@ The script filters the `SampleSheet.csv` for samples where `ProjectName` begins 
   
 4. A `.txt` list of missing `"FLUSeq"` sample IDs found in the `SampleSheet.csv` but not in the `summary_report.tsv` file. Samples that fail to match are excluded from result files to ensure only complete records are reported.
 
-Example:
+Required Files:
+
+1. SampleSheet.csv (containing [BCLConvert_Data] and [Cloud_Data] sections)
+   
+2. summary_report.tsv (walkercreek workflow output found within the SUMMARY_REPORT directory)
+
+Example (run the script within the flu sequencing run directory):
+
 ```bash
 python influenza_labware8_results.py -r <summary_report.tsv> -s <SampleSheet.csv> -o <output_dir>
 ```
