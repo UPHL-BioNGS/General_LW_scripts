@@ -226,3 +226,21 @@ aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 aws_sam
 ls *fastq.gz | parallel aws s3 cp --profile 155221691104_dhhs-uphl-biongs-dev --region us-west-2 {} s3://dhhs-uphl-omics-inputs-dev/$run/{}
 ```
 
+## influenza_labware8_results.py
+
+This Python script processes Influenza sequencing results to generate Labware 8-compatible input files. It extracts metadata from the Illumina sample sheet, `SampleSheet.csv`, and combines it with analysis results from the `summary_report.tsv` file produced by the Walkercreek workflow. 
+
+The script filters the `SampleSheet.csv` for samples where `ProjectName` begins with `"FLUSeq"` then uses the `summary_report.tsv` results to generate:
+
+1. Individual `.txt` result files per sample
+
+2. A merged `.txt` summary file
+  
+3. A summary `.csv` file sorted by QC status and subtype
+  
+4. A `.txt` list of missing `"FLUSeq"` sample IDs found in the `SampleSheet.csv` but not in the `summary_report.tsv` file. Samples that fail to match are excluded from result files to ensure only complete records are reported.
+
+Example:
+```bash
+python influenza_labware8_results.py -r <summary_report.tsv> -s <SampleSheet.csv> -o <output_dir>
+```
