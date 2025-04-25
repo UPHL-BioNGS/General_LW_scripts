@@ -14,7 +14,7 @@ Required Files:
     - summary_report.tsv (workflow output)
 
 Usage:
-    python influenza_labware8.py -r <summary_report.tsv> -s <SampleSheet.csv> -o <output_dir>
+    python influenza_labware8_results.py -r <summary_report.tsv> -s <SampleSheet.csv> -o <output_dir>
 """
 
 import argparse
