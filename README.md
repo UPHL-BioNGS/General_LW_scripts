@@ -232,7 +232,7 @@ This script takes a MiSeq sample sheet and the directory of grandeur results (re
 
 EXAMPLE:
 ```bash
-python3 grandeur_to_sheets.py -g aws_results -s SampleSheet.csv
+python3 grandeur_to_sheets.py -g aws_results -s SampleSheet.csv -r run_name
 ```
 
 Four files are generated:
