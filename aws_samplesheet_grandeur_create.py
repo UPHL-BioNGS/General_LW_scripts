@@ -20,7 +20,7 @@ import logging
 from pathlib import Path
 
 # local
-from General_LW_scripts.miseq_samplesheet_to_df import read_miseq_sample_sheet
+from miseq_samplesheet_to_df import read_miseq_sample_sheet
 
 def find_files(sample_name, directory):
     """
