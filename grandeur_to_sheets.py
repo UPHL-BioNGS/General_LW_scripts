@@ -244,11 +244,12 @@ def fastani_results(df, args):
     if not fastani_df.empty:
         fastani_df             = fastani_df[fastani_df['ANI estimate'] >= 0.9]
         fastani_df             = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
-        fastani_df             = fastani_df.drop_duplicates(subset=['sample'], keep = 'first')
         fastani_df['organism'] = fastani_df['reference'].str.replace('_GC.*', '', regex = True)
         fastani_df['sample']   = fastani_df['sample'].astype('str')
 
-        df = pd.merge(df,fastani_df[['sample','organism']],left_on='sample_name', right_on='sample', how='left')
+        fastani_df_depulicated = fastani_df.drop_duplicates(subset=['sample'], keep = 'first').copy()
+
+        df = pd.merge(df,fastani_df_depulicated[['sample','organism']],left_on='sample_name', right_on='sample', how='left')
         df = df.drop('sample', axis=1)
 
     else:
@@ -281,10 +282,16 @@ def fix_escherichia(row, fastani_df):
     matches = fastani_df[fastani_df['sample'] == sample_id]
     if 'ipaH' in amr:
         genus_matches = matches[matches['organism'].str.contains('Shigella', case=False, na=False)]
-        organism = f"{genus_matches.sort_values(by='ANI estimate', ascending=False).iloc[0]['organism']} (ipaH+)"
+        try:
+            organism = f"{genus_matches.sort_values(by='ANI estimate', ascending=False).iloc[0]['organism']} (ipaH+)"
+        except:
+            organism = "Unknown (ipaH+)"
     else:
         genus_matches = matches[matches['organism'].str.contains('Escherichia', case=False, na=False)]
-        organism = f"{genus_matches.sort_values(by='ANI estimate', ascending=False).iloc[0]['organism']} (ipaH-)"
+        try:
+            organism = f"{genus_matches.sort_values(by='ANI estimate', ascending=False).iloc[0]['organism']} (ipaH-)"
+        except:
+            organism = "Unknown (ipaH-)"
 
     return organism
 
@@ -306,6 +313,10 @@ def fix_ecoli(df, fastani_df):
     """
     logging.info("Checking Escherichia species")
     df['organism'] = df.apply(lambda row: fix_escherichia(row, fastani_df), axis=1)
+    df.loc[
+        df['organism'].str.contains('Shigella|Escherichia', na=False),
+        'SerotypeFinder (E. coli)'
+    ] = df['organism'].str.split(" ").str[0].str.replace("_", " ", regex=False) + ' ' + df['ecoli_O_H']
     return df
 
 
