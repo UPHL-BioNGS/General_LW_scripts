@@ -274,13 +274,14 @@ def fix_escherichia(row, fastani_df):
     """
     organism = str(row['organism']) if pd.notna(row['organism']) else ""
     amr = str(row['amr genes']) if pd.notna(row['amr genes']) else ""
+    virulence = str(row['virulence genes']) if pd.notna(row['virulence genes']) else ""
     sample_id = row['sample_id']
 
     if "Shigella" not in organism and "Escherichia" not in organism:
         return organism
 
     matches = fastani_df[fastani_df['sample'] == sample_id]
-    if 'ipaH' in amr:
+    if 'ipaH' in amr or 'ipaH' in virulence:
         genus_matches = matches[matches['organism'].str.contains('Shigella', case=False, na=False)]
         try:
             organism = f"{genus_matches.sort_values(by='ANI estimate', ascending=False).iloc[0]['organism']} (ipaH+)"
