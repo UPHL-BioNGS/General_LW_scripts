@@ -313,11 +313,13 @@ def fix_ecoli(df, fastani_df):
 
     """
     logging.info("Checking Escherichia species")
-    df['organism'] = df.apply(lambda row: fix_escherichia(row, fastani_df), axis=1)
-    df.loc[
-        df['organism'].str.contains('Shigella|Escherichia', na=False),
-        'SerotypeFinder (E. coli)'
-    ] = df['organism'].str.split(" ").str[0].str.replace("_", " ", regex=False) + ' ' + df['ecoli_O_H']
+
+    if 'ecoli_O_H' in df.columns:
+        df['organism'] = df.apply(lambda row: fix_escherichia(row, fastani_df), axis=1)
+        df.loc[
+            df['organism'].str.contains('Shigella|Escherichia', na=False),
+            'SerotypeFinder (E. coli)'
+        ] = df['organism'].str.split(" ").str[0].str.replace("_", " ", regex=False) + ' ' + df['ecoli_O_H']
     return df
 
 
