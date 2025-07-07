@@ -148,7 +148,7 @@ def create_files(df):
     # columns for final files
     # For the results tab : top organism, serotypefinder/shigellatyper, seqsero2, coverage, warnings, blobtools, and kraken2
     finished_cols = [
-        'wgs_id', 
+        'sample_id', 
         'Description', 
         'organism', 
         'SerotypeFinder (E. coli)', 
@@ -162,7 +162,7 @@ def create_files(df):
     
     # ARLN needs 'WGS MLST', 'AMR genes', 'Virulence genes'
     arln_cols = [
-        'wgs_id', 
+        'sample_id', 
         'Description', 
         'organism', 
         'coverage', 
@@ -543,6 +543,7 @@ def sample_sheet_to_df(samplesheet):
             line = file.readline()
             clarity_string = line.strip()
 
+
         df['lims_id'] = df['sample_id'].str.replace(  '-UT.*','', regex=True)
         df['lims_id'] = df['lims_id'].astype('str')
 
@@ -572,13 +573,14 @@ def sample_sheet_to_df(samplesheet):
             clarity_df['Description'] = clarity_df['Species'].astype(str)
 
             df = pd.merge(df, clarity_df, on='lims_id', how='left')
+
         except Exception as e:
             logging.warning(f"Something happened with clarity: {e}")
             logging.debug(traceback.format_exc())
 
         df['wgs_id'] = df['ARLN ID'].fillna(df['sample_name'].str.replace('-UT.*','', regex=True))
         df[['sample_id', 'sample_name', 'wgs_id']] = df[['sample_id', 'sample_name', 'wgs_id']].astype('str')
-        
+
         return df
 
     else:
