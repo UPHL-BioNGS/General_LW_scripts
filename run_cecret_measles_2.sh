@@ -92,26 +92,12 @@ cd $out_dir
 
 # Run cecret with fastqs (Erin needs to update the github version so we are running the local version for now as mentioned below)
 
-
-nextflow run UPHL-BioNGS/Cecret -profile docker \
---sample_sheet /Volumes/NGS_2/measles/$run_name/Cecret/${run_name}_samplesheet_cecret.csv \
---reference_genome /Volumes/NGS_2/measles/references/NC_001498.1.fasta \
---primer_bed /Volumes/NGS_2/measles/references/NC_001498.1_primal_tiling_primer.bed \
---species other --kraken2_db /Volumes/NGS_2/Data/kraken2_db/h+v/ \
---samtools_ampliconstats false \
---nextclade_dataset nextstrain/measles/N450/WHO-2012 \
---outdir $out_dir --freyja false
-
-# NEW way 
-
-nextflow run /Volumes/NGS_2/Bioinformatics/eriny/Cecret -profile docker -resume \
---sample_sheet /Volumes/NGS_2/measles/$run_name/Cecret/${run_name}_samplesheet_cecret.csv \
---reference_genome /Volumes/NGS_2/measles/references/NC_001498.1.fasta \
---primer_bed /Volumes/NGS_2/measles/references/NC_001498.1_primal_tiling_primer.bed \
---species other --kraken2_db /Volumes/NGS_2/Data/kraken2_db/h+v/ \
---samtools_ampliconstats false --nextclade_dataset nextstrain/measles/N450/WHO-2012 \
---outdir $out_dir --freyja false
-
+nextflow run UPHL-BioNGS/Cecret \
+    -profile uphl,slurm,mev \
+    --sample_sheet /Volumes/NGS_2/measles/$run_name/Cecret/${run_name}_samplesheet_cecret.csv \
+    --reference_genome /Volumes/NGS_2/measles/references/NC_001498.1.fasta \
+    --primer_bed /Volumes/NGS_2/measles/references/NC_001498.1_primal_tiling_primer.bed \
+    --outdir $out_dir
 
 echo "$(date) : Cecret analysis complete!!!"
 
