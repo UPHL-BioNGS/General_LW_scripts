@@ -3,9 +3,9 @@ Author: Robby Sainsbury
 
 Description:
 
-This script will collect needed files to get results from Cecret updating the Measles clincal tab on the WGS Tracking Google Sheet
+This script will collect needed files to get results from Cecret updating the Measles clinical tab on the WGS Tracking Google Sheet.
 
-Outputs a file called "wgs_tracking_formatted_data.csv" whose contents can be copied into the first column of the Measles clincal tab.
+Outputs a file called "wgs_tracking_formatted_data.csv" whose contents can be copied into the first column of the Measles clinical tab.
 
 Then the user will have to use the "Split text to columns" functionality under "Data" in Google Sheets to split the data into the proper columns.
 
