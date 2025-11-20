@@ -186,6 +186,19 @@ EXAMPLE:
 python3 bssh_reads_by_run.py -r UT-M70330-240131 -o  /Volumes/IDGenomics_NAS/pulsenet_and_arln/UT-M70330-240131/reads
 ```
 
+## cecret_mev_to_lw8.py
+
+Generates a LabWare 8 import file by parsing Cecret results.
+
+Inputs:
+- Cecret summary (for clade info)
+- Sample Sheet (to capture all samples, including zero-read failures)
+- Run Name (must be explicitly provided via the --run_name flag; it is not inferred from the directory)
+
+EXAMPLE:
+```bash
+python3 cecret_mev_to_lw8.py --run_name UT-VH00770-251114 --results cecret/cecret_results.csv --samplesheet SampleSheet.csv
+```
 
 ## bssh_sample_sheet.py
 
