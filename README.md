@@ -240,3 +240,13 @@ Four files are generated:
 - arln_tab.txt : ";" -delimited results relevant to the "ARLN_regional" tab.
 - finished_tab.tsv : tab-delimited results relevant to the "Finished" tab.
 - finished_tab.txt : ";" -delimited results relevant to the "Finished" tab.
+
+## run_cecret_measles_2.sh
+
+This script copies measles wastewater samples and starts the cecret workflow.
+
+```
+# replace with actual run name from /Volumes/NGS/Output/
+run=251031_VH00770_193_AAH5JWVM5
+run_cecret_measles_2.sh $run
+```
