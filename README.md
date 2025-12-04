@@ -240,3 +240,13 @@ Four files are generated:
 - arln_tab.txt : ";" -delimited results relevant to the "ARLN_regional" tab.
 - finished_tab.tsv : tab-delimited results relevant to the "Finished" tab.
 - finished_tab.txt : ";" -delimited results relevant to the "Finished" tab.
+
+## mev_cecret_to_sheets.py
+
+This script merges sequencing output (from the "Cecret" pipeline) with a sample sheet based on a run name provided as a command-line argument. It creates a standardized tracking file by selecting specific columns, adding placeholders for manual entry, and validating that the detected organism is Measles (Morbillivirus hominis), flagging the row if it is not. The file can then be copied into WGS Tracking Google Sheet.
+
+Example
+```
+python3 /General_LW_scripts/mev_cecret_to_sheets.py <run name>
+```
+Generates a file called wgs_tracking_formatted_data.csv in the run folder.
