@@ -250,3 +250,14 @@ Example
 python3 /General_LW_scripts/mev_cecret_to_sheets.py <run name>
 ```
 Generates a file called wgs_tracking_formatted_data.csv in the run folder.
+
+## run_cecret_measles_2.sh
+
+This script copies measles wastewater samples and starts the cecret workflow.
+
+```
+# replace with actual run name from /Volumes/NGS/Output/
+run=251031_VH00770_193_AAH5JWVM5
+run_cecret_measles_2.sh $run
+```
+
