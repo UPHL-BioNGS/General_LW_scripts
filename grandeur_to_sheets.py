@@ -573,6 +573,8 @@ def sample_sheet_to_df(samplesheet):
             clarity_df['Description'] = clarity_df['Species'].astype(str)
 
             df = pd.merge(df, clarity_df, on='lims_id', how='left')
+            if 'ARLN ID' not in df.columns:
+                df['ARLN ID'] = None
 
         except Exception as e:
             logging.warning(f"Something happened with clarity: {e}")
