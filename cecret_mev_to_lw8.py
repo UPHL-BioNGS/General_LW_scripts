@@ -12,7 +12,7 @@ def main():
     parser.add_argument("-r", "--run_name", required=True, help="Name of the run (e.g., UT-VH00770-251017)")
     parser.add_argument("-c", "--results", required=True, help="Path to the cecret_results.csv file")
     parser.add_argument("-s", "--samplesheet", required=True, help="Path to the SampleSheet.csv file")
-    parser.add_argument("-o", "--output", help="Output filename (default: cecret_mev_\{run_name\}.txt)")
+    parser.add_argument("-o", "--output", help="Output filename (default: cecret_mev_run_name.txt)")
 
     args = parser.parse_args()
     
@@ -117,7 +117,6 @@ def main():
             "LIMS_TEST_ID": s_id,
             "Run Name": run_name,
             "Submission Accession": submission_accession,
-            "Isolate Name": "",
             "WGS Organism": organism,
             "Passed QC": passed_qc,
             "Nextclade clade": clade,
@@ -130,14 +129,14 @@ def main():
 
     # --- 3. Create Output CSV ---
     columns = [
-        "LIMS_TEST_ID", "Run Name", "Submission Accession", "Isolate Name",
+        "LIMS_TEST_ID", "Run Name", "Submission Accession",
         "WGS Organism", "Passed QC", "Nextclade clade", "B3", "D4", "D8", "H1", "Other Clade"
     ]
     
     output_df = pd.DataFrame(output_rows, columns=columns)
     
     # Save as .txt but in csv format
-    output_df.to_csv(output_file, index=False)
+    output_df.to_csv(output_file, index=False, lineterminator='\r\n')
     print(f"Successfully created {output_file}")
 
 if __name__ == "__main__":
