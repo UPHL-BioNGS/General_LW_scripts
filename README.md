@@ -186,6 +186,19 @@ EXAMPLE:
 python3 bssh_reads_by_run.py -r UT-M70330-240131 -o  /Volumes/IDGenomics_NAS/pulsenet_and_arln/UT-M70330-240131/reads
 ```
 
+## cecret_mev_to_lw8.py
+
+Generates a LabWare 8 import file by parsing Cecret results.
+
+Inputs:
+- Cecret summary (for clade info)
+- Sample Sheet (to capture all samples, including zero-read failures)
+- Run Name (must be explicitly provided via the --run_name flag; it is not inferred from the directory)
+
+EXAMPLE:
+```bash
+python3 cecret_mev_to_lw8.py --run_name UT-VH00770-251114 --results cecret/cecret_results.csv --samplesheet SampleSheet.csv
+```
 
 ## bssh_sample_sheet.py
 
@@ -240,3 +253,24 @@ Four files are generated:
 - arln_tab.txt : ";" -delimited results relevant to the "ARLN_regional" tab.
 - finished_tab.tsv : tab-delimited results relevant to the "Finished" tab.
 - finished_tab.txt : ";" -delimited results relevant to the "Finished" tab.
+
+## mev_cecret_to_sheets.py
+
+This script merges sequencing output (from the "Cecret" pipeline) with a sample sheet based on a run name provided as a command-line argument. It creates a standardized tracking file by selecting specific columns, adding placeholders for manual entry, and validating that the detected organism is Measles (Morbillivirus hominis), flagging the row if it is not. The file can then be copied into WGS Tracking Google Sheet.
+
+Example
+```
+python3 /General_LW_scripts/mev_cecret_to_sheets.py <run name>
+```
+Generates a file called wgs_tracking_formatted_data.csv in the run folder.
+
+## run_cecret_measles_2.sh
+
+This script copies measles wastewater samples and starts the cecret workflow.
+
+```
+# replace with actual run name from /Volumes/NGS/Output/
+run=251031_VH00770_193_AAH5JWVM5
+run_cecret_measles_2.sh $run
+```
+
