@@ -193,8 +193,8 @@ try:
                 except ValueError as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
-                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
-                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
+                    slack_message("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
+                    logger.info("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     elif len(species) < 1:
@@ -207,7 +207,7 @@ try:
                     del species
 
                 else:
-                    slack_message("New Sequecning Run Started: %s" %  i)
+                    slack_message("New Sequencing Run Started: %s" %  i)
                     open_screen_and_run_script('screen_run.py',i)
 
             with open('experiments_done.txt', 'w') as file:
