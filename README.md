@@ -274,3 +274,23 @@ run=251031_VH00770_193_AAH5JWVM5
 run_cecret_measles_2.sh $run
 ```
 
+## run_cecret_mev.sh
+
+This script copies measles clinical samples and starts the cecret workflow.
+
+```
+# replace with actual run name 
+export run=UT-VH00770-260220
+bash ~/General_LW_scripts/run_cecret_mev.sh $run
+```
+
+## get_mev_submission_data.sh
+
+This script copies and renames consensus files, raw fastq files, and some Vadr output from Cecret to prepare for submission to NCBI
+Requires that the submission csv file exported from LW8 be placed in the run directory: /Volumes/NGS_2/measles/run_name-mev/
+
+```
+#change this to the real submission date
+export sub="2026-02-23"
+bash ~/General_LW_scripts/get_mev_submission_data.sh $run $sub
+```
