@@ -13,7 +13,7 @@ from typing import Union
 import functools
 import logging
 
-logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='/Volumes/NGS_2/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
 logger = logging.getLogger('analysis_for_run.py')
@@ -41,7 +41,7 @@ def log(_func=None, *, my_logger):
     else:
         return decorator_log(_func)
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
+config = SourceFileLoader("config","/Volumes/NGS_2/Bioinformatics/jarnn/config.py").load_module()
 
 # Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
 @log(my_logger=logger)
@@ -89,10 +89,10 @@ def open_screen_and_run_script(script_path, experiment_name, run_type=None):
 
     # Send the command to run the script in the screen session
     if run_type is None:
-        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path} -r {experiment_name}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
 
     else:
-        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path} -r {experiment_name} --{run_type}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
 
 @log(my_logger=logger)
 def my_requests_get(*args, **kwargs):
@@ -157,10 +157,11 @@ try:
                         species_element = root.find('.//udf:field[@name="Species"]', namespaces=namespace_map)
 
                         # Extract the value of the udf:field element
-                        species_value = species_element.text
+                        if species_element is not None:
+                            species_value = species_element.text
 
-                        species.append(species_value)
-                    logger.info(species)
+                            species.append(species_value)
+                        logger.info(species)
                     if len(species) > 0:
                         species=set(species)
                     if len(species) < 1:
@@ -192,19 +193,21 @@ try:
                 except ValueError as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
-                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
-                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
+                    slack_message("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
+                    logger.info("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     elif len(species) < 1:
                        run_type = ""
-                    else:
+                    elif i.split("-")[1].startswith("SH"):
                         run_type= "grandeur"
+                    else:
+                        run_type = ""
                     open_screen_and_run_script('screen_run.py',i, run_type)
                     del species
 
                 else:
-                    slack_message("New Sequecning Run Started: %s" %  i)
+                    slack_message("New Sequencing Run Started: %s" %  i)
                     open_screen_and_run_script('screen_run.py',i)
 
             with open('experiments_done.txt', 'w') as file:
