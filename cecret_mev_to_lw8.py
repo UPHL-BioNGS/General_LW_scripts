@@ -93,7 +93,10 @@ def main():
         # QC Status
         # Using 'vadr_p/f' column (PASS/FAIL)
         passed_qc = row.get('vadr_p/f', 'FAIL') 
-        
+        #check if the value is nan, if so fill it in with FAIL
+        if passed_qc != passed_qc: 
+            passed_qc = 'FAIL'
+            
         # Clade Logic
         clade = str(row.get('nextclade_clade', ''))
         b3 = "NOT_DETECT"
