@@ -96,7 +96,7 @@ def main():
         #check if the value is nan, if so fill it in with FAIL
         if passed_qc != passed_qc: 
             passed_qc = 'FAIL'
-
+            
         # Clade Logic
         clade = str(row.get('nextclade_clade', ''))
         b3 = "NOT_DETECT"
