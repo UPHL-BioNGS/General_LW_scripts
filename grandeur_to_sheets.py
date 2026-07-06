@@ -558,27 +558,24 @@ def sample_sheet_to_df(samplesheet):
         ] 
 
         logging.info(f"Getting information from clarity")
-        try:
-            clarity_dict = query_clarity_for_ids(df['lims_id'], clarity_keys, 'queryuser', clarity_string)
+        clarity_dict = query_clarity_for_ids(df['lims_id'], clarity_keys, 'queryuser', clarity_string)
 
-            clarity_info = []
-            for lims_id, info in clarity_dict.items():
-                record = {'lims_id': lims_id}
+        clarity_info = []
+        for lims_id, info in clarity_dict.items():
+            record = {'lims_id': lims_id}
+
+            if isinstance(info, dict) and info:
                 for key, value in info.items():
                     record[key] = next(iter(value)) if isinstance(value, set) else value
-                clarity_info.append(record)
+            clarity_info.append(record)
 
-            clarity_df = pd.DataFrame(clarity_info)
-            clarity_df['lims_id'] = clarity_df['lims_id'].astype(str)
-            clarity_df['Description'] = clarity_df['Species'].astype(str)
+        clarity_df = pd.DataFrame(clarity_info)
+        clarity_df['lims_id'] = clarity_df['lims_id'].astype(str)
+        clarity_df['Description'] = clarity_df['Species'].astype(str)
 
-            df = pd.merge(df, clarity_df, on='lims_id', how='left')
-            if 'ARLN ID' not in df.columns:
-                df['ARLN ID'] = None
-
-        except Exception as e:
-            logging.warning(f"Something happened with clarity: {e}")
-            logging.debug(traceback.format_exc())
+        df = pd.merge(df, clarity_df, on='lims_id', how='left')
+        if 'ARLN ID' not in df.columns:
+            df['ARLN ID'] = None
 
         df['wgs_id'] = df['ARLN ID'].fillna(df['sample_name'].str.replace('-UT.*','', regex=True))
         df[['sample_id', 'sample_name', 'wgs_id']] = df[['sample_id', 'sample_name', 'wgs_id']].astype('str')
