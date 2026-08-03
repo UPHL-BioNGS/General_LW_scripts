@@ -203,12 +203,12 @@ try:
                         run_type= "grandeur"
                     else:
                         run_type = ""
-                    open_screen_and_run_script('screen_run.py',i, run_type)
+                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i, run_type)
                     del species
 
                 else:
-                    slack_message("New Sequencing Run Started: %s" %  i)
-                    open_screen_and_run_script('screen_run.py',i)
+                    slack_message("New Sequencing  Run Started: %s" %  i)
+                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i)
 
             with open('experiments_done.txt', 'w') as file:
                 for item in bssh_now:

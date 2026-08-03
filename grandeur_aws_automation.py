@@ -72,11 +72,13 @@ print("Output:", stdout, stderr)
 #Create AWS JSON file
 aws_json="""
 {
-  "workflowId": "9550235",
+  "workflowId": "9995817",
   "runName": "Automated_Run_%s",
   "roleArn": "arn:aws:iam::226424408322:role/omics-base-OmicsResources-OmicsWorkflowStartRunJobR-2om9MkMWNQbm",
   "outputUri": "s3://dhhs-uphl-biongs-grandeur-4-2-20240425-22-04-01-output-prod/",
   "runGroupId": "4657844",
+  "networkingMode":"VPC",
+  "configurationName": "dhhs-uphl-biongs-omics-vpc",
   "parameters": {
     "sample_sheet": "s3://dhhs-uphl-biongs-grandeur-4-2-20240425-22-04-01-input-prod/%s/reads/%s_graduer_samplesheet.csv"
   }

@@ -108,24 +108,14 @@ while t==0:
             print('Not Complete')
 
         try:
-            if tmp.at[args.run_name,'Status']=='Failed' or tmp.at[args.run_name,'Status']=='Stopped' or tmp.at[run_name,'Status']=='Needs Attention' or tmp.at[run_name,'Status']=='Timed Out':
+            if tmp.at[run_name,'Status']=='Failed' or tmp.at[run_name,'Status']=='Stopped' or tmp.at[run_name,'Status']=='Needs Attention' or tmp.at[run_name,'Status']=='Timed Out':
                 user=i
-                idd=tmp.at[args.run_name,'Id']
+                idd=tmp.at[run_name,'Id']
                 slack_message('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information' % run_name)
                 logger.info('%s has "Failed" or was unable to complete on BSSH; Script is aborting, check BSSH for more information %s' % (run_name,datetime.now()))
                 sys.exit()
         except:
             print('Not Failed')
-        if run_type == 'mycosnp':
-            if tmp.at[run_name,'Status']=='Needs' and  p == 0:
-                user=i
-                idd=tmp.at[run_name,'Id']
-                slack_message('%s is "Needs Attention" on BSSH, starting "BCL Convert for ICA (Beta)" with CLI' % run_name)
-                logger.info('%s is "Needs Attention" on BSSH, starting "BCL Convert for ICA (Beta)" with CLI' % run_name)
-                bashCommand="bs launch application --config=bioinfo --name 'BCL Convert for ICA (Beta)' --option=bssh_run_id:%s" % idd
-                result = subprocess.run(bashCommand, shell=True, stdout=subprocess.PIPE)
-                logger.info(result.stdout)
-                p = 1
     if t==0:
         print('Sleep')
         time.sleep(1200)
@@ -139,6 +129,10 @@ if run_type:
         stdout, stderr = process.communicate()
         print("Output:", stdout, stderr)
     if run_type == 'mycosnp':
-        print("No automation")
+        process = subprocess.Popen(["python","/Volumes/NGS_2/Bioinformatics/jarnn/mycosnp_aws_automation.py", "%s" % run_name], stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, text=True)
+
+        stdout, stderr = process.communicate()
+        print("Output:", stdout, stderr)
 
 my_subprocess_run(["screen", "-S", "%s" % run_name, "-X", "quit"])
