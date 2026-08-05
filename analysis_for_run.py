@@ -124,72 +124,40 @@ try:
         if len(change) > 0:
             for i in change:
                 try:
-                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                                        # Parse the XML
-                    root = ET.fromstring(xml)
+                    sequencers= ['Load%20To%20Reagent%20Cartridge%20(NextSeq%201000/2000%20Sequencing%20v2.1)',
+                                'Load%20to%20Dry%20Cartridge%20(MiSeq%20i100%20Series%20Sequencing%20v2.0)',
+                                'MiSeq%20Run%20(MiSeq%20v3.1)','Load%20to%20Flowcell%20(NovaSeq%206000%20v3.7)', ]
+
+                    for seq in sequencers:
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=%s&udf.Run%%20Name=%s" % (seq,i),
+                                        auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+                        art_step_details = re.findall(r'limsid="([^"]+)"', xml)
+                        if art_step_details:
+                            break
+                            
+                    xml_art_step_details=(requests.get("https://uphl-ngs.claritylims.com/api/v2/steps/%s/details" % art_step_details[0],
+                                                            auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+
+                    art_step_details = re.findall(r'limsid="([^"]+)"', xml_art_step_details)[0]
+                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % art_step_details, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
 
                     # Extract the limsid attribute
+
                     artifact_limsids = re.findall(r'limsid="([^"]+)"', xml)
 
-                    # Extract the limsid attribute
-
-                    sample_lims_ids = []
-                    for artifact_id in artifact_limsids:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                        match = re.search(r'sample\s+limsid="([^"]+)"', xml)
-                        if match:
-                            sample_lims_ids.append(match.group(1))
-
                     species=[]
-                    for j in sample_lims_ids:
+                    for j in artifact_limsids:
                         xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
                                             auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                        # Parse the XML data
-                        root = ET.fromstring(xml)
-                                            
-                        namespace_map = {
-                                'udf': 'http://genologics.com/ri/userdefined',
-                                'ri': 'http://genologics.com/ri',
-                                'file': 'http://genologics.com/ri/file',
-                                'smp': 'http://genologics.com/ri/sample'}
-
                         # Find the udf:field element with name="Species"
-                        species_element = root.find('.//udf:field[@name="Species"]', namespaces=namespace_map)
+                        species_match = re.search(r'<udf:field name="Species" type="String">([^<]+)</udf:field>', xml)
 
                         # Extract the value of the udf:field element
-                        if species_element is not None:
-                            species_value = species_element.text
-
+                        if species_match:
+                            species_value = species_match.group(1)
                             species.append(species_value)
-                        logger.info(species)
                     if len(species) > 0:
                         species=set(species)
-                    if len(species) < 1:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=Load%%20To%%20Reagent%%20Cartridge%%20(NextSeq%%201000/2000%%20Sequencing%%20v2.1)&udf.Run%%20Name=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-                        art_step_details = re.findall(r'limsid="([^"]+)"', xml)
-                        for j in art_step_details:
-                            xml_art_step_details=(requests.get("https://uphl-ngs.claritylims.com/api/v2/steps/%s/details" % j,
-                                        auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                            art_step_details = re.findall(r'limsid="([^"]+)"', xml_art_step_details)[0]
-                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % art_step_details, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-
-                        # Extract the limsid attribute
-                        sample_lims_ids= re.findall(r'limsid="([^"]+)"', xml)
-
-                        species=[]
-                        for j in sample_lims_ids:
-                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
-                                                auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                            # Find the udf:field element with name="Species"
-                            species_match = re.search(r'<udf:field name="Species" type="String">([^<]+)</udf:field>', xml)
-
-                            # Extract the value of the udf:field element
-                            if species_match:
-                                species_value = species_match.group(1)
-                                species.append(species_value)
-                        logger.info(species)
-                        if len(species) > 0:
-                            species=set(species)
                 except ValueError as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
