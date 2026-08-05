@@ -13,7 +13,7 @@ from typing import Union
 import functools
 import logging
 
-logging.basicConfig(filename='/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='/Volumes/NGS_2/Bioinformatics/jarnn/analysis_for_run.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # create logger
 logger = logging.getLogger('analysis_for_run.py')
@@ -41,7 +41,7 @@ def log(_func=None, *, my_logger):
     else:
         return decorator_log(_func)
 
-config = SourceFileLoader("config","/Volumes/IDGenomics_NAS/Bioinformatics/jarnn/config.py").load_module()
+config = SourceFileLoader("config","/Volumes/NGS_2/Bioinformatics/jarnn/config.py").load_module()
 
 # Function to handle the stdout of the bs CLI tool. Returns a list of list of strings.
 @log(my_logger=logger)
@@ -89,10 +89,10 @@ def open_screen_and_run_script(script_path, experiment_name, run_type=None):
 
     # Send the command to run the script in the screen session
     if run_type is None:
-        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path} -r {experiment_name}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}\n"])
 
     else:
-        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path} -r {experiment_name} --{run_type}\n"])
+        my_subprocess_run(["screen", "-S", experiment_name, "-X", "stuff", f"python3 {script_path}  {experiment_name}  {run_type}\n"])
 
 @log(my_logger=logger)
 def my_requests_get(*args, **kwargs):
@@ -124,88 +124,59 @@ try:
         if len(change) > 0:
             for i in change:
                 try:
-                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts?containername=%s" % i, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                                        # Parse the XML
-                    root = ET.fromstring(xml)
+                    sequencers= ['Load%20To%20Reagent%20Cartridge%20(NextSeq%201000/2000%20Sequencing%20v2.1)',
+                                'Load%20to%20Dry%20Cartridge%20(MiSeq%20i100%20Series%20Sequencing%20v2.0)',
+                                'MiSeq%20Run%20(MiSeq%20v3.1)','Load%20to%20Flowcell%20(NovaSeq%206000%20v3.7)', ]
+
+                    for seq in sequencers:
+                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=%s&udf.Run%%20Name=%s" % (seq,i),
+                                        auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+                        art_step_details = re.findall(r'limsid="([^"]+)"', xml)
+                        if art_step_details:
+                            break
+                            
+                    xml_art_step_details=(requests.get("https://uphl-ngs.claritylims.com/api/v2/steps/%s/details" % art_step_details[0],
+                                                            auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
+
+                    art_step_details = re.findall(r'limsid="([^"]+)"', xml_art_step_details)[0]
+                    xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % art_step_details, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
 
                     # Extract the limsid attribute
+
                     artifact_limsids = re.findall(r'limsid="([^"]+)"', xml)
 
-                    # Extract the limsid attribute
-
-                    sample_lims_ids = []
-                    for artifact_id in artifact_limsids:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % artifact_id, auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                        match = re.search(r'sample\s+limsid="([^"]+)"', xml)
-                        if match:
-                            sample_lims_ids.append(match.group(1))
-
                     species=[]
-                    for j in sample_lims_ids:
+                    for j in artifact_limsids:
                         xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
                                             auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                        # Parse the XML data
-                        root = ET.fromstring(xml)
-                                            
-                        namespace_map = {
-                                'udf': 'http://genologics.com/ri/userdefined',
-                                'ri': 'http://genologics.com/ri',
-                                'file': 'http://genologics.com/ri/file',
-                                'smp': 'http://genologics.com/ri/sample'}
-
                         # Find the udf:field element with name="Species"
-                        species_element = root.find('.//udf:field[@name="Species"]', namespaces=namespace_map)
+                        species_match = re.search(r'<udf:field name="Species" type="String">([^<]+)</udf:field>', xml)
 
                         # Extract the value of the udf:field element
-                        species_value = species_element.text
-
-                        species.append(species_value)
-                    logger.info(species)
+                        if species_match:
+                            species_value = species_match.group(1)
+                            species.append(species_value)
                     if len(species) > 0:
                         species=set(species)
-                    if len(species) < 1:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=Load%%20To%%20Reagent%%20Cartridge%%20(NextSeq%%201000/2000%%20Sequencing%%20v2.1)&udf.Run%%20Name=%s" % i, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-                        art_step_details = re.findall(r'limsid="([^"]+)"', xml)
-                        for j in art_step_details:
-                            xml_art_step_details=(requests.get("https://uphl-ngs.claritylims.com/api/v2/steps/%s/details" % j,
-                                        auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                            art_step_details = re.findall(r'limsid="([^"]+)"', xml_art_step_details)[0]
-                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/artifacts/%s" % art_step_details, auth=HTTPBasicAuth('jarnn', 'civic1225CIVIC!@@%')).content).decode("utf-8")
-
-                        # Extract the limsid attribute
-                        sample_lims_ids= re.findall(r'limsid="([^"]+)"', xml)
-
-                        species=[]
-                        for j in sample_lims_ids:
-                            xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/samples/%s" % j, 
-                                                auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
-                            # Find the udf:field element with name="Species"
-                            species_match = re.search(r'<udf:field name="Species" type="String">([^<]+)</udf:field>', xml)
-
-                            # Extract the value of the udf:field element
-                            if species_match:
-                                species_value = species_match.group(1)
-                                species.append(species_value)
-                        logger.info(species)
-                        if len(species) > 0:
-                            species=set(species)
                 except ValueError as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
-                    slack_message("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
-                    logger.info("New Sequecning Run Started: %s. This is a run with %s samples" %  (i,species))
+                    slack_message("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
+                    logger.info("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
                     elif len(species) < 1:
                        run_type = ""
-                    else:
+                    elif i.split("-")[1].startswith("SH"):
                         run_type= "grandeur"
-                    open_screen_and_run_script('screen_run.py',i, run_type)
+                    else:
+                        run_type = ""
+                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i, run_type)
                     del species
 
                 else:
-                    slack_message("New Sequecning Run Started: %s" %  i)
-                    open_screen_and_run_script('screen_run.py',i)
+                    slack_message("New Sequencing  Run Started: %s" %  i)
+                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i)
 
             with open('experiments_done.txt', 'w') as file:
                 for item in bssh_now:
