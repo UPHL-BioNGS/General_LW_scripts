@@ -165,7 +165,7 @@ try:
                     logger.info("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
-                    elif 'Influenza' in species:
+                    elif 'Influenza' in species or 'RSV' in species:
                         run_type = "walkercreek"
                     elif len(species) < 1:
                        run_type = ""
