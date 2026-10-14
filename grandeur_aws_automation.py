@@ -51,6 +51,10 @@ shutil.copy(path_to_samplesheet +"SampleSheet.csv",output_path+"/reads")
 
 #Create Granduer Samplesheet
 list_3=[]
+
+#Remove samples whose FASTQ files are smaller than 23 bytes
+fastqs[:] =  [x for x in fastqs if os.path.getsize(path_to_fastqs+"/"+x) > 23]
+
 fastqs.sort()
 s3="s3://dhhs-uphl-biongs-grandeur-4-2-20240425-22-04-01-input-prod/%s" % run_name
 for i in fastqs[::2]:

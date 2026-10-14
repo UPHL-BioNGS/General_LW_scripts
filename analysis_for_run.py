@@ -83,7 +83,7 @@ def slack_message(string):
     except:
         logger.info("Slack Error")
 @log(my_logger=logger)
-def open_screen_and_run_script(script_path, experiment_name, run_type=None):
+def open_screen_and_run_script(script_path, experiment_name, run_type=None, species=None):
     # Open a new detached screen session
     my_subprocess_run(["screen", "-dmS",  experiment_name])
 
@@ -129,7 +129,7 @@ try:
                                 'MiSeq%20Run%20(MiSeq%20v3.1)','Load%20to%20Flowcell%20(NovaSeq%206000%20v3.7)', ]
 
                     for seq in sequencers:
-                        xml=(requests.get("https://uphl-ngs.claritylims.com/api/v2/processes?type=%s&udf.Run%%20Name=%s" % (seq,i),
+                        xml=(requests.get(f"https://uphl-ngs.claritylims.com/api/v2/processes?type={seq}&udf.Run%20Name={i}",
                                         auth=HTTPBasicAuth(c_user, c_password)).content).decode("utf-8")
                         art_step_details = re.findall(r'limsid="([^"]+)"', xml)
                         if art_step_details:
@@ -158,20 +158,22 @@ try:
                             species.append(species_value)
                     if len(species) > 0:
                         species=set(species)
-                except ValueError as ve:
+                except (ValueError, NameError, IndexError) as ve:
                     logger.warning("API Calls to Clarity Failed for %s. Error: %s " % (i, str(ve)))
                 if 'species' in locals():
                     slack_message("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     logger.info("New Sequencing Run Started: %s. This is a run with %s samples" %  (i,species))
                     if 'Candida' in species:
                         run_type = "mycosnp"
+                    elif 'Influenza' in species:
+                        run_type = "walkercreek"
                     elif len(species) < 1:
                        run_type = ""
-                    elif i.split("-")[1].startswith("SH"):
+                    elif i.split("-")[1].startswith("SH") and 'Mpox' not in species:
                         run_type= "grandeur"
                     else:
                         run_type = ""
-                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i, run_type)
+                    open_screen_and_run_script('/Volumes/NGS_2/Bioinformatics/jarnn/screen_run.py',i, run_type, species)
                     del species
 
                 else:

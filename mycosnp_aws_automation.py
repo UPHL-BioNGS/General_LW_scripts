@@ -52,6 +52,10 @@ shutil.copy(path_to_samplesheet +"SampleSheet.csv",output_path+"/Sequencing_read
 #Create Mycosnp Samplesheet
 list_3=[]
 fastqs.sort()
+
+#Remove samples whose FASTQ files are smaller than 23 bytes
+fastqs[:] =  [x for x in fastqs if os.path.getsize(path_to_fastqs+"/"+x) > 23]
+
 s3="s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/%s" % run_name
 for i in fastqs[::2]:
     list_1=[]
@@ -72,19 +76,21 @@ print("Output:", stdout, stderr)
 #Create AWS JSON file for Pre-Mycosnp
 aws_json_pre="""
 {
-  "workflowId": "6072632",
+  "workflowId": "4460798",
   "runName": "Automated_Run_Pre_%s",
   "roleArn": "arn:aws:iam::226424408322:role/omics-base-OmicsResources-OmicsWorkflowStartRunJobR-2om9MkMWNQbm",
   "outputUri": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-output-prod/",
   "runGroupId": "4657844",
   "networkingMode":"VPC",
   "configurationName": "dhhs-uphl-biongs-omics-vpc",
+  "engineSettings": {"profile": "aws"},
+  "scratchStorageMode": "LOCAL",
   "parameters": {
     "input": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/%s/Sequencing_reads/%s_mycosnp_samplesheet.csv",
     "workflow": "PRE_MYCOSNP",
     "skip_combined_analysis": false,
     "coverage": 70,
-    "add_vcf_file": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/add_clades_vcf.txt",
+    "add_vcf_file": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/add_clades_vcf.csv",
     "skip_phylogeny": false,
     "fasta": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/B11205_reference.fasta",
     "snpeff": true
@@ -97,19 +103,21 @@ with open("%s/%s_pre_awsparameters.json" % (output_path,run_name) , 'w') as f:
 #Create AWS JSON file for Pre-Mycosnp
 aws_json_nfcore="""
 {
-  "workflowId": "6072632",
+  "workflowId": "4460798",
   "runName": "Automated_Run_NFCore_%s",
   "roleArn": "arn:aws:iam::226424408322:role/omics-base-OmicsResources-OmicsWorkflowStartRunJobR-2om9MkMWNQbm",
   "outputUri": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-output-prod/",
   "runGroupId": "4657844",
   "networkingMode":"VPC",
   "configurationName": "dhhs-uphl-biongs-omics-vpc",
+  "engineSettings": {"profile": "aws"},
+  "scratchStorageMode": "LOCAL",
   "parameters": {
     "input": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/%s/Sequencing_reads/%s_mycosnp_samplesheet.csv",
     "workflow": "NFCORE_MYCOSNP",
     "skip_combined_analysis": false,
     "coverage": 70,
-    "add_vcf_file": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/add_clades_vcf.txt",
+    "add_vcf_file": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/add_clades_vcf.csv",
     "skip_phylogeny": false,
     "fasta": "s3://dhhs-uphl-biongs-mycosnp-nf-1-6-2-input-prod/reference_files/B11205_reference.fasta",
     "snpeff": true

@@ -134,5 +134,20 @@ if run_type:
 
         stdout, stderr = process.communicate()
         print("Output:", stdout, stderr)
+    if run_type == 'walkercreek':
+            for i in range(len(sys.argv))[2:]:
+                if 'Influenza' in sys.argv[i]:
+                    process = subprocess.Popen(["python","/Volumes/NGS_2/Bioinformatics/jarnn/walkercreek_aws_automation.py", "%s" % run_name], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, text=True)
+            
+                    stdout, stderr = process.communicate()
+                    print("Output:", stdout, stderr)
+            for i in range(len(sys.argv))[2:]:
+                if 'RSV' in sys.argv[i]:
+                    process = subprocess.Popen(["python","/Volumes/NGS_2/Bioinformatics/jarnn/walkercreek_aws_rsv_automation.py", "%s" % run_name], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, text=True)
+            
+                    stdout, stderr = process.communicate()
+                    print("Output:", stdout, stderr)
 
 my_subprocess_run(["screen", "-S", "%s" % run_name, "-X", "quit"])
