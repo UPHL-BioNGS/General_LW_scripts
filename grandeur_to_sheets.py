@@ -50,10 +50,8 @@ def amrfinder_results(df, args):
 
     amrfinder_df = pd.DataFrame()
 
-    if os.path.exists(f"{args.grandeur}/amrfinder/amrfinderplus.txt"):
-        amrfinder_df = pd.read_table(f"{args.grandeur}/amrfinder/amrfinderplus.txt")
-    else:
-        amrfinder_df = results_to_df(f"{args.grandeur}/ncbi-AMRFinderplus/", "\t", "_amrfinder_plus.txt")
+    if os.path.exists(f"{args.grandeur}/amrfinder/amrfinderplus_summary.txt"):
+        amrfinder_df = pd.read_table(f"{args.grandeur}/amrfinder/amrfinderplus_summary.txt")
 
     if "Element symbol" in amrfinder_df.columns:
         element_or_gene = "Element"
@@ -84,53 +82,6 @@ def amrfinder_results(df, args):
 
     return df
 
-
-def blobtools_results(df, summary_df):
-    """
-
-    Parses blobtools output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-
-    logging.info("Getting blobtools organism results")
-    df = pd.merge(df,summary_df[['sample','blobtools_organism_(per_mapped_reads)']],left_on='sample_name', right_on='sample', how='left')
-    df = df.drop('sample', axis=1)
-
-    return df
-
-
-def circulocov_results(df, args):
-    """
-    Parses circulocov output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        summary_df (pd.Dataframe): dataframe of grandeur results.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-    """
-
-    logging.info("Getting circulocov results")
-    circulocov_df = pd.read_table(f"{args.grandeur}/circulocov/circulocov_summary.tsv")
-    circulocov_df['sample'] = circulocov_df['sample'].astype('str')
-    circulocov_df = circulocov_df[circulocov_df["contigs"].str.strip() == "all"]
-    circulocov_df['coverage'] = circulocov_df['illumina_meandepth']
-
-    df = pd.merge(df,circulocov_df[['sample','coverage']],left_on='sample_name', right_on='sample', how='left')
-    df['coverage'] = df['coverage'].fillna(0)
-    df['coverage'] = df['coverage'].round(2)
-    df = df.drop('sample', axis=1)
-
-    return df
-
 def create_files(df):
     """
 
@@ -146,7 +97,7 @@ def create_files(df):
 
     logging.info("Creating final files")
     # columns for final files
-    # For the results tab : top organism, serotypefinder/shigellatyper, seqsero2, coverage, warnings, blobtools, and kraken2
+    # For the results tab : top organism, serotypefinder/shigellatyper, seqsero2, coverage, warnings, and kraken2
     finished_cols = [
         'sample_id', 
         'Description', 
@@ -156,8 +107,9 @@ def create_files(df):
         'Sample_Project', 
         'coverage', 
         'Pass', 
-        'warnings', 
-        'blobtools_organism_(per_mapped_reads)'
+        'warnings',
+        'shigapass_ipah',
+        'shigapass_predicted_serotype'
         ]
     
     # ARLN needs 'WGS MLST', 'AMR genes', 'Virulence genes'
@@ -167,12 +119,15 @@ def create_files(df):
         'organism', 
         'coverage', 
         'mlst', 
-        'emm type', 
+        'emmtyper_predicted_emm-type', 
         'Sample_Project', 
         'amr genes', 
-        'virulence genes', 
-        'kraken2_organism_(per_fragment)', 
-        'blobtools_organism_(per_mapped_reads)'
+        'virulence genes',
+        'checkm2_completeness',
+        'checkm2_contamination',
+        'sylph_Adjusted_ANI',
+        'sylph_Taxonomic_abundance',
+        'kraken2_report'
         ]
 
     for col in finished_cols + arln_cols:
@@ -193,80 +148,14 @@ def create_files(df):
     logging.info('Created arln_tab.{txt,tsv}')
 
 
-def emmtyper_results(df, args):
-    """
-
-    Parses emmtyper output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-
-    logging.info("Getting emmtyper results")
-    emmtyper_df = results_to_df(f"{args.grandeur}/emmtyper/", "\t", "_emmtyper.txt")
-
-    if not emmtyper_df.empty:
-        emmtyper_df['sample'] = emmtyper_df['sample'].astype('str')
-        emmtyper_df['emm type'] = emmtyper_df['Predicted emm-type']
-        df = pd.merge(df,emmtyper_df[['sample','emm type']],left_on='sample_name', right_on='sample', how='left')
-        df = df.drop('sample', axis=1)
-
-    return df
-
-
-def fastani_results(df, args):
-    """
-
-    Parses fastani output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info("Getting fastani organism results")
-    fastani_df = pd.DataFrame()
-
-    if os.path.exists(f"{args.grandeur}/fastani/fastani_summary.csv"):
-        fastani_df = pd.read_csv(f"{args.grandeur}/fastani/fastani_summary.csv")
-    else:
-        fastani_df = results_to_df(f"{args.grandeur}/fastani/", ',', '_fastani.csv')
-
-    # Getting the WGS organism from fastani or mash
-    if not fastani_df.empty:
-        fastani_df             = fastani_df[fastani_df['ANI estimate'] >= 0.9]
-        fastani_df             = fastani_df.sort_values(by=['ANI estimate'], ascending = False)
-        fastani_df['organism'] = fastani_df['reference'].str.replace('_GC.*', '', regex = True)
-        fastani_df['sample']   = fastani_df['sample'].astype('str')
-
-        fastani_df_depulicated = fastani_df.drop_duplicates(subset=['sample'], keep = 'first').copy()
-
-        df = pd.merge(df,fastani_df_depulicated[['sample','organism']],left_on='sample_name', right_on='sample', how='left')
-        df = df.drop('sample', axis=1)
-
-    else:
-        df['organism'] = pd.NA
-
-    return df, fastani_df
-
-
-
-def fix_escherichia(row, fastani_df):
+def fix_escherichia(row, skani_df):
     """
 
     Checking for ipaH.
     
     Args:
         row (pd.Dataframe): dataframe row
-        fastani_df: fastani_df
+        skani_df: skani_df
     
     Returns:
         organism (str): Predicted organism.
@@ -280,7 +169,7 @@ def fix_escherichia(row, fastani_df):
     if "Shigella" not in organism and "Escherichia" not in organism:
         return organism
 
-    matches = fastani_df[fastani_df['sample'] == sample_id]
+    matches = skani_df[skani_df['sample'] == sample_id]
     if 'ipaH' in amr or 'ipaH' in virulence:
         genus_matches = matches[matches['organism'].str.contains('Shigella', case=False, na=False)]
         try:
@@ -295,32 +184,6 @@ def fix_escherichia(row, fastani_df):
             organism = "Unknown (ipaH-)"
 
     return organism
-
-def fix_ecoli(df, fastani_df):
-    """
-
-    Checking for ipaH. 
-    ipaH+ means Shigella
-    ipaH- means Escherichia
-    Fixes the 'organism' column for these species.
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        fastani_df: fastani_df
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info("Checking Escherichia species")
-
-    if 'ecoli_O_H' in df.columns:
-        df['organism'] = df.apply(lambda row: fix_escherichia(row, fastani_df), axis=1)
-        df.loc[
-            df['organism'].str.contains('Shigella|Escherichia', na=False),
-            'SerotypeFinder (E. coli)'
-        ] = df['organism'].str.split(" ").str[0].str.replace("_", " ", regex=False) + ' ' + df['ecoli_O_H']
-    return df
 
 
 def grandeur_summary(df, args):
@@ -339,20 +202,11 @@ def grandeur_summary(df, args):
     summary = f"{args.grandeur}/grandeur_summary.tsv"
     logging.info(f"Extracting information from {summary}")
 
-    # using results in summary file instead of the "original"
-    # blobtools      = f"{args.grandeur}/blobtools/blobtools_summary.txt"
-    # kraken2        = f"{args.grandeur}/kraken2/kraken2_summary.csv"
-    # serotypefinder = f"{args.grandeur}/serotypefinder/serotypefinder_results.txt"
-    # shigatyper     = f"{args.grandeur}/shigatyper/shigatyper_results.txt"
-
-    # getting coverage
     summary_df = pd.read_table(summary)
     summary_df['sample'] = summary_df['sample'].astype('str')
 
-    required_cols = {'sample', 'coverage', 'warnings'}
-    available_cols = required_cols.intersection(summary_df.columns)
 
-    df = pd.merge(df,summary_df[list(available_cols)],left_on='sample_name', right_on='sample', how='left')
+    df = pd.merge(df,summary_df,left_on='sample_name', right_on='sample', how='left')
     df = df.drop('sample', axis=1)
 
     if 'coverage' in df.columns:
@@ -361,75 +215,10 @@ def grandeur_summary(df, args):
     else:
         df['coverage'] = 0
 
-    if 'shigatyper_hit' in summary_df.columns.str.lower() and 'serotypefinder_serotype_o' in summary_df.columns.str.lower() and 'serotypefinder_serotype_h' in summary_df.columns.str.lower():
-        df = serotypefinder_results(df, summary_df)
-
-    if 'kraken2_organism_(per_fragment)' in summary_df.columns:
-        df = kraken2_results(df, summary_df)
-
-    if 'blobtools_organism_(per_mapped_reads)' in summary_df.columns:
-        df = blobtools_results(df, summary_df)
-    
-    return df
-
-def kraken2_results(df, summary_df):
-    """
-
-    Parses kraken2 output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info("Getting kraken2 results")
-    df = pd.merge(df,summary_df[['sample','kraken2_organism_(per_fragment)']],left_on='sample_name', right_on='sample', how='left')
-    df = df.drop('sample', axis=1)
-
     return df
 
 
-def mash_results(df, args):
-    """
-
-    Parses mash output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info("Getting mash organism results")
-    mash_df = pd.DataFrame()
-
-    if os.path.exists(f"{args.grandeur}/mash/mash_summary.csv"):
-        mash_df = pd.read_csv(f"{args.grandeur}/mash/mash_summary.csv", sep = ',')
-    else:
-        mash_df = results_to_df(f"{args.grandeur}/mash/", ",", "summary.mash.csv")
-
-    if not mash_df.empty:
-        mash_df['sample'] = mash_df['sample'].astype('str')
-        mash_df = mash_df.sort_values(by=['P-value', 'mash-distance'])
-        mash_df = mash_df.drop_duplicates(subset=['sample'], keep = 'first')
-
-        df_with_org = df[df['organism'].notna()].copy()
-        df_missing_org = df[df['organism'].isna()].copy()
-        if not df_missing_org.empty:
-            df_missing_org = df_missing_org.drop(columns=['organism'])
-            df_missing_org = pd.merge(df_missing_org, mash_df[['sample','organism']],left_on='sample_name', right_on='sample', how='left')
-            df_missing_org['organism'] = df_missing_org['organism'].combine_first(df_missing_org['organism'])
-            df_missing_org = df_missing_org.drop(columns=['sample'])
-            df = pd.concat([df_with_org, df_missing_org], ignore_index=True)
-    return df
-
-
-def mlst_results(df, args):
+def mlst_results(df):
     """
 
     Parses mlst output
@@ -442,14 +231,9 @@ def mlst_results(df, args):
         df (pd.Dataframe): Pandas dataframe of the parsed output.
     """
 
-    logging.info("Getting mlst results")
-    mlst_df = results_to_df(f"{args.grandeur}/mlst/", "\t", "mlst.tsv")
-
-    if not mlst_df.empty:
-        mlst_df['sample'] = mlst_df['sample'].astype('str')
-        mlst_df['mlst'] = mlst_df['matching PubMLST scheme'] + ':' + mlst_df['ST'].astype('str')
-        df              = pd.merge(df,mlst_df[['sample','mlst']],left_on='sample_name', right_on='sample', how='left')
-        df              = df.drop('sample', axis=1)
+    # mlst_matching_pubmlst_scheme
+    # mlst_st
+    df['mlst'] = df['mlst_matching_pubmlst_scheme'] + ':' + df['mlst_st'].astype('str')
 
     return df
 
@@ -590,86 +374,29 @@ def sample_sheet_to_df(samplesheet):
         sys.exit(1)
 
 
-def seqsero2_results(df, args):
+def seqsero2_results(df):
     """
 
     Parses seqsero2 output
     
     Args:
         df (pd.Dataframe): dataframe for results thus far.
-        args (argparse.Namespace): Parsed command-line arguments.
     
     Returns:
         df (pd.Dataframe): Pandas dataframe of the parsed output.
 
     """
 
-    seqsero2_dir = f"{args.grandeur}/seqsero2/"
+    # seqsero2_predicted_serotype
+    # seqsero2_predicted_antigenic_profile
 
-    if not os.path.isdir(seqsero2_dir):
-        return df
-
-    logging.info(f"Getting salmonella serotype information from {seqsero2_dir}")
-
-    # does not use results_to_df because of file structure
-    dfs = []
-    files = glob.glob(f"{args.grandeur}/seqsero2/*/SeqSero_result.tsv")
-    for file in files:
-        ind_df = pd.read_table(file, sep='\t')
-        if not ind_df.empty:
-            dfs.append(ind_df)
+    logging.info("Formatting Salmonella results")
 
 
-    if dfs:
-        seqsero2_df = pd.concat(dfs, ignore_index=True)
-    else:
-        return df
-
-    if not seqsero2_df.empty:
-        seqsero2_df['sample'] = seqsero2_df['sample'].astype('str')
-        seqsero2_df['SeqSero Organism (Salmonella)'] = 'Salmonella enterica serovar ' + seqsero2_df['Predicted serotype'] + ':' + seqsero2_df['Predicted antigenic profile']
-
-        df = pd.merge(df,seqsero2_df[['sample','SeqSero Organism (Salmonella)']],left_on='sample_name', right_on='sample', how='left')
-        df = df.drop('sample', axis=1)
-    else:
-        df['SeqSero Organism (Salmonella)'] = ''
+    df['SeqSero Organism (Salmonella)'] = 'Salmonella enterica serovar ' + df['seqsero2_predicted_serotype'] + ':' + df['seqsero2_predicted_antigenic_profile']
 
     return df
 
-
-def serotypefinder_results(df, summary_df):
-    """
-
-    Parses serotypefinder output
-    
-    Args:
-        df (pd.Dataframe): dataframe for results thus far.
-        summary_df (pd.Dataframe): dataframe of grandeur results.
-        args (argparse.Namespace): Parsed command-line arguments.
-    
-    Returns:
-        df (pd.Dataframe): Pandas dataframe of the parsed output.
-
-    """
-    logging.info('Double checking Escherichia organism with shigatyper results')
-
-    if 'shigatyper_hit' in summary_df.columns.str.lower() and 'serotypefinder_serotype_o' in summary_df.columns.str.lower() and 'serotypefinder_serotype_h'  in summary_df.columns.str.lower():
-        # creating a copy of the summary_df to just the Escherichia samples
-        ecoli_df  = summary_df[summary_df['mash_organism'].str.contains('Shigella', na=False) | summary_df['mash_organism'].str.contains('Escherichia', na=False) ].copy()
-
-        if ecoli_df.empty:
-            ecoli_df = summary_df[summary_df['fastani_top_organism'].str.contains('Shigella', na=False) | summary_df['fastani_top_organism'].str.contains('Escherichia', na=False) ].copy()
-        
-        ecoli_df.columns = ecoli_df.columns.str.lower()
-        ecoli_df['serotypefinder_Serotype_O'] = ecoli_df['serotypefinder_serotype_o'].fillna("none")
-        ecoli_df['serotypefinder_Serotype_H'] = ecoli_df['serotypefinder_serotype_h'].fillna("none")
-        ecoli_df['ecoli_O_H']                 = ecoli_df['serotypefinder_Serotype_O'].astype(str) + ':' + ecoli_df['serotypefinder_Serotype_H'].astype(str)
-        ecoli_df['sample']                    = ecoli_df['sample'].astype('str')
-
-        df = pd.merge(df, ecoli_df[['sample','ecoli_O_H', 'shigatyper_hit']],left_on='sample_name', right_on='sample', how='left')
-        df = df.drop('sample', axis=1)
-
-    return df
 
 
 def main():
@@ -687,7 +414,7 @@ def main():
 
     logging.basicConfig(format='%(asctime)s - %(message)s', datefmt = '%y-%b-%d %H:%M:%S', level=logging.INFO)
 
-    version = '0.1.24191'
+    version = '0.1.26300'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--grandeur',    type=str, help='directory where Grandeur has output results', required=True)
@@ -702,23 +429,20 @@ def main():
         df['Sample_Project'] = args.run
 
     df = grandeur_summary(df, args)
+    print(df.columns)
 
-    if 'coverage' not in df.columns:
-        df = circulocov_results(df, args)
+    df['organism'] = df['predicted_organism']
 
-    df, fastani_df = fastani_results(df, args)
+    if 'seqsero2_predicted_serotype' in df.columns and 'seqsero2_predicted_antigenic_profile' in df.columns:
+        df = seqsero2_results(df)
 
-    df = mash_results(df, args)
+    if 'mlst_matching_pubmlst_scheme' in df.columns and 'mlst_st' in df.columns:
+        df = mlst_results(df)
 
-    df = seqsero2_results(df, args)
-
-    df = mlst_results(df, args)
-
-    df = emmtyper_results(df, args)
-
+    # TODO : AMR genes
     df = amrfinder_results(df, args)
-
-    df = fix_ecoli(df, fastani_df)
+    # TODO: ADD in shigapass check
+    # df = fix_ecoli(df, args)
 
     df = pass_fail(df, args)
 
