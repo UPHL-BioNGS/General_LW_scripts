@@ -27,6 +27,7 @@ import glob
 import traceback
 
 import pandas as pd
+import numpy as np
 
 # local files
 from miseq_samplesheet_to_df    import read_miseq_sample_sheet
@@ -399,6 +400,26 @@ def seqsero2_results(df):
 
 
 
+def serotypefinder_results(df):
+    # Standardize empty strings, None, or placeholder dashes to NaN
+    o = df['serotypefinder_Serotype_O'].replace(['', '-'], np.nan)
+    h = df['serotypefinder_Serotype_H'].replace(['', '-'], np.nan)
+
+    # Check that at least one antigen is called
+    has_any = o.notna() | h.notna()
+
+    # Fill only the single missing antigen with the literal string 'none'
+    o_str = o.fillna('none').astype(str)
+    h_str = h.fillna('none').astype(str)
+
+    # Format the string
+    full_string = df['predicted_organism'].astype(str) + ' ' + o_str + ':' + h_str
+
+    # Leave as an empty string '' (or use np.nan if you prefer pandas NA)
+    df['SerotypeFinder (E. coli)'] = full_string.where(has_any, '')
+
+    return df
+
 def main():
     """
 
@@ -429,7 +450,6 @@ def main():
         df['Sample_Project'] = args.run
 
     df = grandeur_summary(df, args)
-    print(df.columns)
 
     df['organism'] = df['predicted_organism']
 
@@ -439,10 +459,10 @@ def main():
     if 'mlst_matching_pubmlst_scheme' in df.columns and 'mlst_st' in df.columns:
         df = mlst_results(df)
 
-    # TODO : AMR genes
+    if 'serotypefinder_Serotype_O' in df.columns and 'serotypefinder_Serotype_H' in df.columns:
+        df = serotypefinder_results(df)
+
     df = amrfinder_results(df, args)
-    # TODO: ADD in shigapass check
-    # df = fix_ecoli(df, args)
 
     df = pass_fail(df, args)
 
