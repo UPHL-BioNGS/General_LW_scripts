@@ -319,3 +319,20 @@ Requires that the submission csv file exported from LW8 be placed in the run dir
 export sub="2026-02-23"
 bash ~/General_LW_scripts/get_mev_submission_data.sh $run $sub
 ```
+
+
+## bigbacter_get_sample_sheet.py
+
+This python script looks through Grandeur run directories and finds ones that have not been added to the BigBacter database, then creates a sample sheet from samples in those runs. It requires pandas. The sample sheet name is required as input. The file will end up here: "/Volumes/NGS_2/Bioinformatics/rsainsbury/bigbacter_new/samplesheets/".
+
+```
+conda run --no-capture-output -n pandas python -u ~/General_LW_scripts/bigbacter_get_sample_sheet.py -s samplesheet_all_2026_11_10.csv
+```
+
+## bigbacter_get_results.py
+
+This script reformats output from BigBacter so that it can be added to the enteric genomic dashboard. It appends SNP distances for each cluster into one file for each pathogen. It then copies SNP tree files for each cluster and only keeps the newest version of each. Finally it copies the overall summary file. The files all end up in this directory: "/Volumes/NGS_2/Bioinformatics/rsainsbury/bigbacter_new/bigbacter_output/".
+
+```
+bash ~/General_LW_scripts/bigbacter_get_results.sh
+```
