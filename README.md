@@ -323,10 +323,10 @@ bash ~/General_LW_scripts/get_mev_submission_data.sh $run $sub
 
 ## bigbacter_get_sample_sheet.py
 
-This python script looks through Grandeur run directories and finds ones that have not been added to the BigBacter database, then creates a sample sheet from samples in those runs. It requires pandas. The sample sheet name is required as input. The file will end up here: "/Volumes/NGS_2/Bioinformatics/rsainsbury/bigbacter_new/samplesheets/".
+This python script looks through Grandeur run directories and finds ones that have not been added to the BigBacter database, then creates a sample sheet from samples in those runs. The sample sheet name is required as input. The file will end up here: "/Volumes/NGS_2/Bioinformatics/rsainsbury/bigbacter_new/samplesheets/".
 
 ```
-conda run --no-capture-output -n pandas python -u ~/General_LW_scripts/bigbacter_get_sample_sheet.py -s samplesheet_all_2026_11_10.csv
+python ~/General_LW_scripts/bigbacter_get_sample_sheet.py -s samplesheet_all_2026_11_10.csv
 ```
 
 ## bigbacter_get_results.py
