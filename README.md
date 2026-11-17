@@ -336,3 +336,20 @@ This script reformats output from BigBacter so that it can be added to the enter
 ```
 bash ~/General_LW_scripts/bigbacter_get_results.sh
 ```
+
+## process_clinical_mev.py
+
+This script performs file processing tasks for submitting clinical measles samples to NCBI and uploading NCBI accessions to LW8. The output is saved in the submission dir named after the submission date inputted, found here: "/Volumes/NGS_2/submissions/*date*/". It takes these paramaters:
+- "-r" or "--run_name": the run name, i.e. "UT-VH00770-251114"
+- "-d" or "date": the submission date, usually the Monday after the run ends, i.e. "2026-11-09"
+- "-s" or "stage": one of the following options: "sra", "genbank", and "ncbi_lw8"
+
+It has three stages:
+1. "sra": For after uploading Cecret results to LW8 and downloading the necessary file to the run directory. Running with this stage will copy and rename consensus files for Abbey to use in phylogenetic analysis to a directory in the run directory called "renamed_consensus", copy and rename fastq files for SRA submission to the "fastq" subdirectory, copy and rename the fasta and tbl files for Genbank submission to the "fasta" subdirectory, and creating metadata files for BioSamples and SRA in the "attributes" subdirectory. 
+2. "genbank": For after SRA accessions are received and the metadata file is copied into the run directory. This makes the genbank source file for uploading to GenBank. 
+3. "ncbi_lw8": For after the Genbank accessions are recieved and they are copied into a file called "genbank.txt" in the run directory. This makes a file called "*run_name*-mev.txt" in the run directory that can be uploaded to LW8 by following the SOP. 
+
+
+```
+python process_clinical_mev.py -d 2026-11-09 -r UT-VH00770-261106 -s sra
+```
