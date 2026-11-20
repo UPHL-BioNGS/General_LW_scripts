@@ -33,7 +33,7 @@ parser.add_argument("--new_name", required=True, help="What you want to rename t
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--artifact", help="limsid of derived sample or artifact")
 group.add_argument("--container", help="limsid of container")
-
+group.add_argument("--sample", help="limsid of container")
 args = parser.parse_args()
 
 headers = {'Content-Type': 'application/xml'}
@@ -89,3 +89,23 @@ if args.artifact:
         auth=HTTPBasicAuth(args.user, args.password)
         ).content
 
+if args.sample:
+    info=requests.get(
+      "https://uphl-ngs.claritylims.com/api/v2/samples/%s" % args.sample,
+      auth=HTTPBasicAuth(args.user, args.password)
+    ).content
+
+    doc = etree.fromstring(info)
+    for e in doc.iterfind("name"):
+        e.text = args.new_name
+    xml=etree.tostring(doc).decode("utf-8")
+    print("Verify that one of the names is the intended name of the plate you want to change:")
+    print(set(info.decode("utf-8").split()).symmetric_difference(set(xml.split()))-{'<?xml', 'version="1.0"', 'standalone="yes"?>', 'encoding="UTF-8"'})
+
+    proceed = input("Continue: y/n? ")
+
+    if proceed == 'y':
+        requests.put(
+        "https://uphl-ngs.claritylims.com/api/v2/samples/%s" % args.sample, data=xml, headers=headers,
+        auth=HTTPBasicAuth(args.user, args.password)
+        ).content
